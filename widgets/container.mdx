@@ -1,0 +1,301 @@
+---
+title: Container
+description: Background containers with solid colors or gradients for styling child widgets
+---
+
+The Container widget family provides colored backgrounds for child widgets. Fern offers three container types: basic containers, centered containers, and gradient containers.
+
+## Container
+
+Basic container widget with a solid background color.
+
+### Constructor
+
+<ParamField path="color" type="uint32_t" required>
+  Background color in ARGB format
+</ParamField>
+
+<ParamField path="x" type="int" default="0">
+  X position in pixels
+</ParamField>
+
+<ParamField path="y" type="int" default="0">
+  Y position in pixels
+</ParamField>
+
+<ParamField path="width" type="int" default="0">
+  Width in pixels
+</ParamField>
+
+<ParamField path="height" type="int" default="0">
+  Height in pixels
+</ParamField>
+
+<ParamField path="child" type="std::shared_ptr<Widget>">
+  Optional child widget to contain
+</ParamField>
+
+### Methods
+
+#### setChild()
+
+Set or replace the child widget.
+
+```cpp
+void setChild(std::shared_ptr<Widget> child)
+```
+
+### Factory Function
+
+```cpp
+std::shared_ptr<ContainerWidget> Container(
+    uint32_t color, 
+    int x, 
+    int y, 
+    int width, 
+    int height,         
+    std::shared_ptr<Widget> child = nullptr, 
+    bool addToManager = false
+)
+```
+
+### Example
+
+```cpp
+#include <fern/fern.hpp>
+
+using namespace Fern;
+
+int main() {
+    Fern::initialize(800, 600);
+    
+    // Create text widget
+    auto text = Text("Hello, World!", 0, 0, Colors::White);
+    
+    // Create container with blue background
+    auto container = Container(
+        Colors::Blue,
+        100, 100,  // Position
+        200, 100,  // Size
+        text,      // Child widget
+        true       // Add to manager
+    );
+    
+    Fern::setDrawCallback([]() {
+        Draw::fill(Colors::Black);
+        WidgetManager::getInstance().renderAll();
+    });
+    
+    Fern::startRenderLoop();
+    return 0;
+}
+```
+
+## CenteredContainer
+
+Container that automatically centers itself on the screen.
+
+### Constructor
+
+<ParamField path="color" type="uint32_t" required>
+  Background color in ARGB format
+</ParamField>
+
+<ParamField path="width" type="int" required>
+  Width in pixels
+</ParamField>
+
+<ParamField path="height" type="int" required>
+  Height in pixels
+</ParamField>
+
+<ParamField path="child" type="std::shared_ptr<Widget>">
+  Optional child widget to contain
+</ParamField>
+
+### Factory Function
+
+```cpp
+std::shared_ptr<CenteredContainerWidget> CenteredContainer(
+    uint32_t color, 
+    int width, 
+    int height,
+    bool addToManager = false,
+    std::shared_ptr<Widget> child = nullptr
+)
+```
+
+### Example
+
+```cpp
+// Create a centered container with a button
+auto button = Button(ButtonConfig(0, 0, 120, 40, "Click Me"));
+auto centered = CenteredContainer(
+    Colors::DarkGray,
+    300, 200,    // Size
+    true,        // Add to manager
+    button       // Child widget
+);
+```
+
+## GradientContainer
+
+Container with a linear gradient background.
+
+### LinearGradient
+
+Utility class for creating color gradients.
+
+#### Direction
+
+```cpp
+enum Direction { 
+    HORIZONTAL,  // Left to right gradient
+    VERTICAL     // Top to bottom gradient
+}
+```
+
+#### GradientStop
+
+Color stop in the gradient.
+
+```cpp
+struct GradientStop {
+    uint32_t color;    // Color in ARGB format
+    float position;    // Position from 0.0 to 1.0
+}
+```
+
+#### Constructor
+
+<ParamField path="stops" type="std::vector<GradientStop>" required>
+  Vector of color stops defining the gradient
+</ParamField>
+
+<ParamField path="direction" type="Direction" default="HORIZONTAL">
+  Direction of the gradient
+</ParamField>
+
+### GradientContainer Constructor
+
+<ParamField path="x" type="int" required>
+  X position in pixels
+</ParamField>
+
+<ParamField path="y" type="int" required>
+  Y position in pixels
+</ParamField>
+
+<ParamField path="width" type="int" required>
+  Width in pixels
+</ParamField>
+
+<ParamField path="height" type="int" required>
+  Height in pixels
+</ParamField>
+
+<ParamField path="gradient" type="const LinearGradient&" required>
+  Linear gradient for the background
+</ParamField>
+
+<ParamField path="child" type="std::shared_ptr<Widget>">
+  Optional child widget to contain
+</ParamField>
+
+### Factory Function
+
+```cpp
+std::shared_ptr<GradientContainerWidget> GradientContainer(
+    int x, 
+    int y, 
+    int width, 
+    int height,
+    const LinearGradient& gradient, 
+    bool addToManager = false,
+    std::shared_ptr<Widget> child = nullptr
+)
+```
+
+### Example
+
+```cpp
+// Create a vertical gradient from blue to red
+LinearGradient gradient({
+    {Colors::Blue, 0.0f},
+    {Colors::Purple, 0.5f},
+    {Colors::Red, 1.0f}
+}, LinearGradient::VERTICAL);
+
+// Create gradient container with text
+auto text = Text("Gradient Background", 0, 0, Colors::White);
+auto gradientBox = GradientContainer(
+    0, 0,
+    300, 200,
+    gradient,
+    true,    // Add to manager
+    text     // Child widget
+);
+```
+
+## Complete Example
+
+```cpp
+#include <fern/fern.hpp>
+
+using namespace Fern;
+
+int main() {
+    Fern::initialize(800, 600);
+    
+    // Basic container
+    auto basicContainer = Container(
+        Colors::Blue,
+        50, 50, 200, 100,
+        Text("Basic Container", 10, 10, Colors::White),
+        true
+    );
+    
+    // Centered container
+    auto centeredContainer = CenteredContainer(
+        Colors::Green,
+        250, 150,
+        true,
+        Text("Centered!", 0, 0, Colors::White)
+    );
+    
+    // Gradient container
+    LinearGradient sunset({
+        {Colors::Orange, 0.0f},
+        {Colors::Pink, 0.5f},
+        {Colors::Purple, 1.0f}
+    }, LinearGradient::HORIZONTAL);
+    
+    auto gradientContainer = GradientContainer(
+        50, 400,
+        700, 150,
+        sunset,
+        true,
+        Text("Gradient Background", 10, 10, Colors::White)
+    );
+    
+    Fern::setDrawCallback([]() {
+        Draw::fill(Colors::Black);
+        WidgetManager::getInstance().renderAll();
+    });
+    
+    Fern::startRenderLoop();
+    return 0;
+}
+```
+
+## Use Cases
+
+- **Container**: Simple background boxes for grouping widgets
+- **CenteredContainer**: Dialog boxes, modals, centered panels
+- **GradientContainer**: Headers, banners, visually appealing backgrounds
+
+## Related Widgets
+
+- [Padding](/widgets/padding) - Add spacing around widgets
+- [Row & Column](/widgets/row-column) - Layout multiple widgets
+- [Center](/widgets/center) - Center widgets without background

@@ -105,7 +105,8 @@
               "widgets/padding",
               "widgets/center",
               "widgets/expanded",
-              "widgets/sized-box"
+              "widgets/sized-box",
+              "widgets/container"
             ]
           }
         ]
