@@ -1,0 +1,202 @@
+{
+  "projectType": "framework",
+  "projectName": "Fern UI Framework",
+  "projectDescription": "A fast, minimal, cross-platform UI framework for C++ with modern design principles and WebAssembly support.",
+  "theme": "palm",
+  "primaryColor": "#2d6a4f",
+  "lightColor": "#52b788",
+  "darkColor": "#1b4332",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "installation"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "core/architecture",
+              "core/widget-system",
+              "core/layout-engine",
+              "core/rendering",
+              "core/event-system"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/creating-widgets",
+              "guides/layouts",
+              "guides/styling",
+              "guides/fonts",
+              "guides/signals-slots",
+              "guides/responsive-design"
+            ]
+          },
+          {
+            "group": "Platform",
+            "pages": [
+              "platform/overview",
+              "platform/linux",
+              "platform/web-wasm",
+              "platform/macos",
+              "platform/windows"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Widgets",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "widgets/overview"
+            ]
+          },
+          {
+            "group": "Basic Widgets",
+            "pages": [
+              "widgets/text",
+              "widgets/button",
+              "widgets/text-input"
+            ]
+          },
+          {
+            "group": "Shapes",
+            "pages": [
+              "widgets/circle",
+              "widgets/line"
+            ]
+          },
+          {
+            "group": "Interactive Widgets",
+            "pages": [
+              "widgets/slider",
+              "widgets/radio-button",
+              "widgets/dropdown",
+              "widgets/progress-bar",
+              "widgets/circular-indicator"
+            ]
+          },
+          {
+            "group": "Layout Containers",
+            "pages": [
+              "widgets/row-column",
+              "widgets/padding",
+              "widgets/center",
+              "widgets/expanded",
+              "widgets/sized-box"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "CLI Reference",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "cli/overview"
+            ]
+          },
+          {
+            "group": "Commands",
+            "pages": [
+              "cli/bloom",
+              "cli/sprout",
+              "cli/fire",
+              "cli/prepare",
+              "cli/install",
+              "cli/templates",
+              "cli/lsp",
+              "cli/web-cache"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Core",
+            "pages": [
+              "api/canvas",
+              "api/input",
+              "api/scene-manager",
+              "api/widget-manager",
+              "api/signal"
+            ]
+          },
+          {
+            "group": "Graphics",
+            "pages": [
+              "api/primitives",
+              "api/colors"
+            ]
+          },
+          {
+            "group": "Font System",
+            "pages": [
+              "api/font",
+              "api/font-manager",
+              "api/ttf-reader"
+            ]
+          },
+          {
+            "group": "C API",
+            "pages": [
+              "api/c-bindings"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Comprehensive widget system with buttons, text, inputs, and custom components",
+    "Flexible layout management with containers and responsive design",
+    "Cross-platform rendering (Linux, Web/WASM, planned macOS/Windows)",
+    "Signal-slot event system for reactive programming",
+    "Font rendering with TTF support",
+    "CLI tool for project scaffolding and building",
+    "Memory-efficient design with minimal dependencies",
+    "C and C++ API support"
+  ],
+  "publicApiSurface": [
+    "Fern::initialize()",
+    "Fern::startRenderLoop()",
+    "Fern::setDrawCallback()",
+    "Fern::setWindowResizeCallback()",
+    "WidgetManager",
+    "SceneManager",
+    "Canvas",
+    "TextWidget",
+    "ButtonWidget",
+    "TextInputWidget",
+    "SliderWidget",
+    "RadioButtonWidget",
+    "DropdownWidget",
+    "ProgressBarWidget",
+    "CircularIndicatorWidget",
+    "CircleWidget",
+    "LineWidget",
+    "Row",
+    "Column",
+    "Padding",
+    "Center",
+    "Expanded",
+    "SizedBox",
+    "Signal",
+    "FontManager",
+    "Colors",
+    "Draw"
+  ]
+}
