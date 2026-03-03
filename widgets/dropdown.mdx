@@ -1,0 +1,314 @@
+---
+title: DropdownWidget
+description: Dropdown menus for selecting from multiple options
+---
+
+DropdownWidget provides dropdown/select menus for choosing from a list of options with customizable styling and scrolling support.
+
+## Basic Usage
+
+```cpp
+#include <fern/fern.hpp>
+
+using namespace Fern;
+
+auto dropdown = Dropdown(DropdownConfig(50, 50, 200, 35)
+    .placeholder("Select an option...")
+    .items({
+        {"Option 1", "opt1"},
+        {"Option 2", "opt2"},
+        {"Option 3", "opt3"}
+    }));
+
+dropdown->onItemSelected.connect([](const DropdownItem& item) {
+    std::cout << "Selected: " << item.text << std::endl;
+});
+```
+
+## Constructor
+
+<ParamField path="config" type="DropdownConfig">
+  Configuration object containing position, size, items, and style
+</ParamField>
+
+## DropdownItem
+
+Represents an item in the dropdown:
+
+```cpp
+struct DropdownItem {
+    std::string text;   // Display text
+    std::string value;  // Internal value (defaults to text if not provided)
+};
+```
+
+## DropdownConfig
+
+Configure dropdown properties:
+
+```cpp
+DropdownConfig(int x, int y, int width = 200, int height = 35)
+```
+
+### Configuration Methods
+
+```cpp
+DropdownConfig& placeholder(const std::string& text)          // Placeholder text
+DropdownConfig& items(const std::vector<DropdownItem>& items) // Set all items
+DropdownConfig& addItem(const std::string& text, const std::string& value = "")  // Add single item
+DropdownConfig& selectedIndex(int index)                      // Set selected index
+DropdownConfig& style(const DropdownStyle& s)                 // Set style
+```
+
+## DropdownStyle
+
+Customize dropdown appearance:
+
+### Color Methods
+
+```cpp
+DropdownStyle& backgroundColor(uint32_t color)
+DropdownStyle& borderColor(uint32_t color)
+DropdownStyle& selectedColor(uint32_t color)
+DropdownStyle& textColor(uint32_t color)
+DropdownStyle& hoverColor(uint32_t color)
+DropdownStyle& dropdownBackgroundColor(uint32_t color)
+```
+
+### Display Methods
+
+```cpp
+DropdownStyle& borderWidth(int width)
+DropdownStyle& padding(int pad)
+DropdownStyle& maxVisibleItems(int count)  // Items before scrolling
+DropdownStyle& fontSize(int size)
+DropdownStyle& useBitmapFont()
+DropdownStyle& useTTFFont(const std::string& fontName)
+```
+
+## Signals
+
+<ParamField path="onSelectionChanged" type="Signal<int>">
+  Emitted when selection changes, provides the selected index
+</ParamField>
+
+<ParamField path="onItemSelected" type="Signal<const DropdownItem&>">
+  Emitted when an item is selected, provides the item
+</ParamField>
+
+<ParamField path="onOpenStateChanged" type="Signal<bool>">
+  Emitted when dropdown opens or closes
+</ParamField>
+
+## Methods
+
+### Selection
+
+```cpp
+void setSelectedIndex(int index)
+int getSelectedIndex() const
+const DropdownItem* getSelectedItem() const
+```
+
+### Items
+
+```cpp
+void addItem(const std::string& text, const std::string& value = "")
+void clearItems()
+void setItems(const std::vector<DropdownItem>& items)
+const std::vector<DropdownItem>& getItems() const
+```
+
+### State
+
+```cpp
+void open()
+void close()
+bool isOpen() const
+```
+
+## Examples
+
+### Basic Dropdown
+
+```cpp
+auto dropdown = Dropdown(DropdownConfig(50, 50, 200, 35)
+    .placeholder("Select...")
+    .items({
+        {"Red", "red"},
+        {"Green", "green"},
+        {"Blue", "blue"}
+    })
+    .selectedIndex(0));
+
+dropdown->onItemSelected.connect([](const DropdownItem& item) {
+    std::cout << "Color: " << item.value << std::endl;
+});
+```
+
+### Language Selector
+
+```cpp
+auto languageDropdown = Dropdown(DropdownConfig(50, 50, 200, 35)
+    .placeholder("Select language...")
+    .items({
+        {"English", "en"},
+        {"Spanish", "es"},
+        {"French", "fr"},
+        {"German", "de"},
+        {"Japanese", "ja"}
+    })
+    .selectedIndex(0)
+    .style(DropdownStyle()
+        .maxVisibleItems(4)));
+
+languageDropdown->onItemSelected.connect([](const DropdownItem& item) {
+    std::cout << "Language: " << item.text << " (" << item.value << ")" << std::endl;
+});
+```
+
+### Styled Dropdown
+
+```cpp
+DropdownStyle style;
+style.backgroundColor(Colors::White)
+     .borderColor(Colors::Gray)
+     .selectedColor(Colors::Blue)
+     .textColor(Colors::Black)
+     .hoverColor(Colors::LightGray)
+     .padding(10)
+     .maxVisibleItems(6);
+
+auto dropdown = Dropdown(DropdownConfig(50, 50, 220, 40)
+    .placeholder("Choose option...")
+    .style(style));
+```
+
+### Dynamic Items
+
+```cpp
+auto categoryDropdown = Dropdown(DropdownConfig(50, 50, 180, 35)
+    .items({{"Electronics", "electronics"}});
+
+auto subcategoryDropdown = Dropdown(DropdownConfig(250, 50, 180, 35));
+
+categoryDropdown->onItemSelected.connect(
+    [subcategoryDropdown](const DropdownItem& category) {
+        if (category.value == "electronics") {
+            subcategoryDropdown->setItems({
+                {"Smartphones", "smartphones"},
+                {"Laptops", "laptops"},
+                {"Tablets", "tablets"}
+            });
+        } else if (category.value == "clothing") {
+            subcategoryDropdown->setItems({
+                {"Shirts", "shirts"},
+                {"Pants", "pants"},
+                {"Shoes", "shoes"}
+            });
+        }
+        subcategoryDropdown->setSelectedIndex(0);
+    }
+);
+```
+
+### Open/Close State Tracking
+
+```cpp
+auto dropdown = Dropdown(DropdownConfig(50, 50, 200, 35)
+    .placeholder("Click to open..."));
+
+dropdown->onOpenStateChanged.connect([](bool isOpen) {
+    if (isOpen) {
+        std::cout << "Dropdown opened" << std::endl;
+    } else {
+        std::cout << "Dropdown closed" << std::endl;
+    }
+});
+```
+
+### Adding Items Dynamically
+
+```cpp
+auto dropdown = Dropdown(DropdownConfig(50, 50, 200, 35)
+    .placeholder("Select item..."));
+
+// Add items one by one
+dropdown->addItem("First Item", "item1");
+dropdown->addItem("Second Item", "item2");
+dropdown->addItem("Third Item", "item3");
+```
+
+## Dropdown Presets
+
+The `DropdownPresets` namespace provides common configurations:
+
+```cpp
+// Default dropdown
+auto default = Dropdown(DropdownPresets::Default(50, 50));
+
+// Modern styled dropdown
+auto modern = Dropdown(DropdownPresets::Modern(50, 100));
+
+// Compact dropdown
+auto compact = Dropdown(DropdownPresets::Compact(50, 150));
+```
+
+## Complete Example
+
+From `examples/cpp/new/dropdown_widget_example.cpp`:
+
+```cpp
+#include <fern/fern.hpp>
+
+using namespace Fern;
+
+void setupUI() {
+    auto qualityDropdown = Dropdown(DropdownConfig(50, 50, 200, 35)
+        .placeholder("Graphics Quality")
+        .items({
+            {"Low", "low"},
+            {"Medium", "medium"},
+            {"High", "high"},
+            {"Ultra", "ultra"}
+        })
+        .selectedIndex(1)
+        .style(DropdownStyle()
+            .backgroundColor(Colors::White)
+            .borderColor(Colors::Gray)
+            .selectedColor(Colors::Green)
+            .textColor(Colors::Black)
+            .hoverColor(Colors::LightGray)));
+    
+    qualityDropdown->onItemSelected.connect([](const DropdownItem& item) {
+        std::cout << "Graphics quality: " << item.text << std::endl;
+    });
+}
+```
+
+## Z-Index Considerations
+
+Dropdowns should typically be added to the widget manager last to ensure they render on top of other widgets:
+
+```cpp
+// Add other widgets first
+addWidget(textWidget);
+addWidget(buttonWidget);
+
+// Add dropdowns last for proper z-index
+addWidget(dropdown1);
+addWidget(dropdown2);
+```
+
+## Use Cases
+
+- **Settings** - Quality, resolution, audio output
+- **Forms** - Country, state, category selection
+- **Filters** - Sort order, time range, status
+- **Navigation** - Menu selection, page navigation
+
+## See Also
+
+- [RadioButtonWidget](/widgets/radio-button) - For fewer options with always-visible choices
+- [ButtonWidget](/widgets/button) - For action triggers
+- [TextInputWidget](/widgets/text-input) - For free-form text entry

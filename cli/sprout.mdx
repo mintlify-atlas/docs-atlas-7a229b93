@@ -1,0 +1,319 @@
+---
+title: sprout
+description: Create a new Fern project with scaffolding and configuration
+---
+
+The `sprout` command creates a new Fern project with a complete directory structure, configuration files, and starter code.
+
+## Usage
+
+```bash
+fern sprout <project_name>
+```
+
+## Arguments
+
+<ParamField path="project_name" type="string" required>
+  Name of the project to create. Must contain only letters, numbers, underscores, and hyphens.
+</ParamField>
+
+## Examples
+
+### Create a New Project
+
+```bash
+fern sprout my_app
+```
+
+<CodeGroup>
+```bash Output
+Creating Fern project: my_app
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Created directory: my_app/lib
+Created directory: my_app/web
+Created directory: my_app/linux
+Created directory: my_app/assets
+Created directory: my_app/examples
+Created directory: my_app/.fern
+
+Created project files:
+  ├── fern.yaml
+  ├── README.md
+  ├── .gitignore
+  ├── lib/main.cpp
+  └── web/template.html
+
+🌱 Project 'my_app' created successfully!
+
+Next Steps
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. cd my_app
+2. fern fire                 # Run your project
+3. fern bloom                # Check system health
+4. fern prepare web          # Build for web
+
+Happy coding! 🌿
+```
+</CodeGroup>
+
+### Navigate to New Project
+
+```bash
+cd my_app
+fern fire
+```
+
+## Project Structure
+
+The `sprout` command creates the following structure:
+
+```
+my_app/
+├── lib/                    # Main source code
+│   └── main.cpp           # Entry point with starter code
+├── web/                   # Web platform specific files
+│   └── template.html      # HTML template for web builds
+├── linux/                 # Linux platform specific files
+├── assets/                # Images, fonts, resources
+├── examples/              # Example code and demos
+├── .fern/                 # Fern metadata
+├── .vscode/               # VS Code configuration
+│   ├── c_cpp_properties.json  # IntelliSense config
+│   └── tasks.json         # Build tasks
+├── fern.yaml              # Project configuration
+├── README.md              # Project documentation
+└── .gitignore             # Git ignore rules
+```
+
+## Generated Files
+
+### fern.yaml
+
+Project configuration file:
+
+```yaml
+name: my_app
+version: 1.0.0
+description: A new Fern project
+
+dependencies:
+  fern: ^0.1.0
+
+platforms:
+  web:
+    enabled: true
+    port: 3000
+  linux:
+    enabled: true
+    
+build:
+  incremental: true
+  optimize: false
+```
+
+### lib/main.cpp
+
+Starter application code:
+
+```cpp
+#include <fern/fern.hpp>
+#include <iostream>
+
+using namespace Fern;
+
+void draw() {
+    // Clear background
+    Draw::fill(Colors::DarkGray);
+    
+    // Draw title
+    DrawText::drawText("Welcome to my_app!", 50, 50, 3, Colors::White);
+    
+    // Draw subtitle
+    DrawText::drawText("Your Fern project is ready!", 50, 100, 2, Colors::LightGray);
+    
+    // Draw instructions
+    DrawText::drawText("Edit lib/main.cpp to start coding", 50, 150, 1, Colors::Cyan);
+    DrawText::drawText("Run 'fern fire' to see changes", 50, 170, 1, Colors::Cyan);
+}
+
+int main() {
+    std::cout << "🌿 Starting my_app..." << std::endl;
+    
+    // Initialize Fern
+    Fern::initialize();
+    
+    // Set up render callback
+    Fern::setDrawCallback(draw);
+    
+    // Start the application
+    Fern::startRenderLoop();
+    
+    return 0;
+}
+```
+
+### web/template.html
+
+Customizable HTML template for web builds:
+
+```html
+<!doctype html>
+<html lang="en-us">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>my_app</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #333;
+        }
+        canvas {
+            display: block;
+            max-width: 100%;
+            max-height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
+    <script type='text/javascript'>
+        var Module = {
+            canvas: document.getElementById('canvas')
+        };
+    </script>
+    {{{ SCRIPT }}}
+</body>
+</html>
+```
+
+### .gitignore
+
+Git ignore rules for Fern projects:
+
+```gitignore
+# Build outputs
+build/
+*.o
+*.a
+*.so
+*.dll
+*.exe
+
+# Platform specific
+web/build/
+linux/build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+```
+
+## VS Code Integration
+
+Projects include VS Code configuration for enhanced development:
+
+### IntelliSense Configuration
+
+The `.vscode/c_cpp_properties.json` file configures C++ IntelliSense with proper include paths for Fern headers.
+
+### Build Tasks
+
+The `.vscode/tasks.json` includes:
+
+- **Fern: Run Project** (Ctrl+Shift+B) - Run `fern fire`
+- **Fern: Run for Web** - Run `fern fire -p web`
+
+## Validation
+
+The project name must:
+
+- Contain only alphanumeric characters, underscores, and hyphens
+- Not be empty
+- Not conflict with an existing directory
+
+<CodeGroup>
+```bash Valid names
+fern sprout my_app
+fern sprout game_2024
+fern sprout dashboard-ui
+```
+
+```bash Invalid names
+fern sprout my-app!        # Special characters not allowed
+fern sprout "my app"       # Spaces not allowed
+fern sprout 2024           # Must start with letter
+```
+</CodeGroup>
+
+## Common Errors
+
+<AccordionGroup>
+  <Accordion title="Directory already exists">
+    The target directory already exists. Choose a different name or remove the existing directory:
+    
+    ```bash
+    rm -rf my_app
+    fern sprout my_app
+    ```
+  </Accordion>
+  
+  <Accordion title="Invalid project name">
+    Project names must contain only letters, numbers, underscores, and hyphens:
+    
+    ```bash
+    # Invalid
+    fern sprout "my app"
+    
+    # Valid
+    fern sprout my_app
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+After creating a project:
+
+<Steps>
+  <Step title="Navigate to project">
+    ```bash
+    cd my_app
+    ```
+  </Step>
+  
+  <Step title="Run the project">
+    ```bash
+    fern fire
+    ```
+  </Step>
+  
+  <Step title="Edit the code">
+    Open `lib/main.cpp` in your editor and start coding
+  </Step>
+  
+  <Step title="Build for web">
+    ```bash
+    fern fire -p web
+    ```
+  </Step>
+</Steps>
+
+## Related Commands
+
+- [`fern fire`](/cli/fire) - Run the created project
+- [`fern bloom`](/cli/bloom) - Check system health before creating projects
+- [`fern templates`](/cli/templates) - Use templates for specialized project types

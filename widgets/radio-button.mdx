@@ -1,0 +1,295 @@
+---
+title: RadioButtonWidget
+description: Radio button groups for single selection from multiple options
+---
+
+RadioButtonWidget provides radio buttons for selecting a single option from a group, with automatic mutual exclusion handling.
+
+## Basic Usage
+
+```cpp
+#include <fern/fern.hpp>
+
+using namespace Fern;
+
+auto group = RadioGroup();
+
+auto option1 = RadioButton(RadioButtonConfig(50, 100, "Option 1", "group1"));
+auto option2 = RadioButton(RadioButtonConfig(50, 130, "Option 2", "group1"));
+auto option3 = RadioButton(RadioButtonConfig(50, 160, "Option 3", "group1"));
+
+group->addButton(option1);
+group->addButton(option2);
+group->addButton(option3);
+
+group->onSelectionChanged.connect([](std::shared_ptr<RadioButtonWidget> button) {
+    std::cout << "Selected: " << button->getText() << std::endl;
+});
+```
+
+## Constructor
+
+<ParamField path="config" type="RadioButtonConfig">
+  Configuration object containing position, text, group name, and style
+</ParamField>
+
+## RadioButtonConfig
+
+Configure radio button properties:
+
+```cpp
+RadioButtonConfig(int x, int y, const std::string& text, const std::string& groupName)
+```
+
+### Configuration Methods
+
+```cpp
+RadioButtonConfig& text(const std::string& t)        // Set label text
+RadioButtonConfig& selected(bool sel)                // Set selected state
+RadioButtonConfig& style(const RadioButtonStyle& s)  // Set style
+```
+
+## RadioButtonStyle
+
+Customize radio button appearance:
+
+### Color Methods
+
+```cpp
+RadioButtonStyle& backgroundColor(uint32_t color)
+RadioButtonStyle& borderColor(uint32_t color)
+RadioButtonStyle& selectedColor(uint32_t color)
+RadioButtonStyle& textColor(uint32_t color)
+RadioButtonStyle& hoverColor(uint32_t color)
+```
+
+### Styling Methods
+
+```cpp
+RadioButtonStyle& borderWidth(int width)
+RadioButtonStyle& radius(int r)                      // Radio button size
+RadioButtonStyle& spacing(int space)                 // Space between button and text
+RadioButtonStyle& fontSize(int size)
+RadioButtonStyle& useBitmapFont()
+RadioButtonStyle& useTTFFont(const std::string& fontName)
+```
+
+## RadioButtonGroup
+
+Manage a group of radio buttons with mutual exclusion:
+
+```cpp
+class RadioButtonGroup {
+public:
+    void addButton(std::shared_ptr<RadioButtonWidget> button);
+    void selectButton(std::shared_ptr<RadioButtonWidget> button);
+    std::shared_ptr<RadioButtonWidget> getSelected() const;
+    const std::vector<std::shared_ptr<RadioButtonWidget>>& getButtons() const;
+    
+    Signal<std::shared_ptr<RadioButtonWidget>> onSelectionChanged;
+};
+```
+
+## Signals
+
+### RadioButtonWidget Signals
+
+<ParamField path="onSelectionChanged" type="Signal<bool>">
+  Emitted when selection state changes
+</ParamField>
+
+<ParamField path="onSelected" type="Signal<>">
+  Emitted when this specific button is selected
+</ParamField>
+
+### RadioButtonGroup Signals
+
+<ParamField path="onSelectionChanged" type="Signal<std::shared_ptr<RadioButtonWidget>>">
+  Emitted when the group's selection changes, provides the selected button
+</ParamField>
+
+## Methods
+
+### RadioButtonWidget Methods
+
+```cpp
+void setSelected(bool selected)
+bool isSelected() const
+
+void setText(const std::string& text)
+const std::string& getText() const
+const std::string& getGroupName() const
+```
+
+## Examples
+
+### Basic Radio Button Group
+
+```cpp
+auto group = RadioGroup();
+
+auto option1 = RadioButton(RadioButtonConfig(50, 100, "Small", "size"));
+auto option2 = RadioButton(RadioButtonConfig(50, 130, "Medium", "size"));
+auto option3 = RadioButton(RadioButtonConfig(50, 160, "Large", "size"));
+
+group->addButton(option1);
+group->addButton(option2);
+group->addButton(option3);
+
+// Set default selection
+option2->setSelected(true);
+```
+
+### Radio Group with Event Handling
+
+```cpp
+auto group = RadioGroup();
+
+auto low = RadioButton(RadioButtonConfig(50, 100, "Low Quality", "quality"));
+auto medium = RadioButton(RadioButtonConfig(50, 130, "Medium Quality", "quality"));
+auto high = RadioButton(RadioButtonConfig(50, 160, "High Quality", "quality"));
+
+group->addButton(low);
+group->addButton(medium);
+group->addButton(high);
+
+group->onSelectionChanged.connect([](std::shared_ptr<RadioButtonWidget> button) {
+    std::cout << "Quality set to: " << button->getText() << std::endl;
+});
+
+medium->setSelected(true); // Default to medium
+```
+
+### Styled Radio Buttons
+
+```cpp
+RadioButtonStyle style;
+style.backgroundColor(Colors::White)
+     .borderColor(Colors::Gray)
+     .selectedColor(Colors::Blue)
+     .textColor(Colors::Black)
+     .hoverColor(Colors::LightGray)
+     .radius(10)
+     .spacing(12);
+
+auto option = RadioButton(RadioButtonConfig(50, 100, "Custom Style", "group")
+    .style(style));
+```
+
+### Multiple Radio Groups
+
+```cpp
+// Size group
+auto sizeGroup = RadioGroup();
+auto small = RadioButton(RadioButtonConfig(50, 100, "Small", "size"));
+auto medium = RadioButton(RadioButtonConfig(50, 130, "Medium", "size"));
+auto large = RadioButton(RadioButtonConfig(50, 160, "Large", "size"));
+
+sizeGroup->addButton(small);
+sizeGroup->addButton(medium);
+sizeGroup->addButton(large);
+
+// Color group
+auto colorGroup = RadioGroup();
+auto red = RadioButton(RadioButtonConfig(200, 100, "Red", "color"));
+auto blue = RadioButton(RadioButtonConfig(200, 130, "Blue", "color"));
+auto green = RadioButton(RadioButtonConfig(200, 160, "Green", "color"));
+
+colorGroup->addButton(red);
+colorGroup->addButton(blue);
+colorGroup->addButton(green);
+```
+
+### Individual Button Events
+
+```cpp
+auto option = RadioButton(RadioButtonConfig(50, 100, "Option A", "group"));
+
+option->onSelected.connect([]() {
+    std::cout << "Option A was selected" << std::endl;
+});
+
+option->onSelectionChanged.connect([](bool selected) {
+    if (selected) {
+        std::cout << "Option A selected" << std::endl;
+    } else {
+        std::cout << "Option A deselected" << std::endl;
+    }
+});
+```
+
+## Radio Button Presets
+
+The `RadioButtonPresets` namespace provides common configurations:
+
+```cpp
+// Default radio button
+auto default = RadioButton(RadioButtonPresets::Default(50, 100, "Option", "group"));
+
+// Modern styled radio button
+auto modern = RadioButton(RadioButtonPresets::Modern(50, 130, "Modern", "group"));
+
+// Compact radio button
+auto compact = RadioButton(RadioButtonPresets::Compact(50, 160, "Compact", "group"));
+```
+
+## Complete Example
+
+```cpp
+#include <fern/fern.hpp>
+
+using namespace Fern;
+
+void setupUI() {
+    auto title = Text(Point(0, 0), "Select Quality", 2, Colors::White);
+    
+    auto qualityGroup = RadioGroup();
+    
+    auto low = RadioButton(RadioButtonConfig(0, 0, "Low", "quality")
+        .style(RadioButtonStyle()
+            .selectedColor(Colors::Red)));
+    
+    auto medium = RadioButton(RadioButtonConfig(0, 0, "Medium", "quality")
+        .style(RadioButtonStyle()
+            .selectedColor(Colors::Yellow)));
+    
+    auto high = RadioButton(RadioButtonConfig(0, 0, "High", "quality")
+        .style(RadioButtonStyle()
+            .selectedColor(Colors::Green)));
+    
+    qualityGroup->addButton(low);
+    qualityGroup->addButton(medium);
+    qualityGroup->addButton(high);
+    
+    medium->setSelected(true);
+    
+    qualityGroup->onSelectionChanged.connect([](auto button) {
+        std::cout << "Quality: " << button->getText() << std::endl;
+    });
+    
+    auto layout = Column({
+        title,
+        SizedBox(0, 20),
+        low,
+        SizedBox(0, 10),
+        medium,
+        SizedBox(0, 10),
+        high
+    });
+    
+    addWidget(Center(layout));
+}
+```
+
+## Use Cases
+
+- **Settings** - Quality, difficulty, mode selection
+- **Forms** - Gender, payment method, shipping options
+- **Filters** - Category selection, sort order
+- **Preferences** - Theme, language, notification settings
+
+## See Also
+
+- [DropdownWidget](/widgets/dropdown) - For selecting from many options
+- [ButtonWidget](/widgets/button) - For action buttons
+- [SliderWidget](/widgets/slider) - For continuous value selection

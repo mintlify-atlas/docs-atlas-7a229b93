@@ -1,0 +1,125 @@
+---
+title: Widget System Overview
+description: Complete reference for all widgets in the Fern UI Framework
+---
+
+The Fern UI Framework provides a comprehensive set of widgets for building interactive user interfaces. Widgets are the building blocks of your UI, ranging from simple text displays to complex interactive controls.
+
+## Widget Categories
+
+### Basic Widgets
+
+Fundamental UI elements for displaying content:
+
+- [TextWidget](/widgets/text) - Display text with customizable fonts, colors, and styles
+- [CircleWidget](/widgets/circle) - Draw circular shapes with click and hover support
+- [LineWidget](/widgets/line) - Draw lines between two points with configurable thickness
+
+### Interactive Widgets
+
+Widgets that respond to user input:
+
+- [ButtonWidget](/widgets/button) - Clickable buttons with hover effects and styling
+- [TextInputWidget](/widgets/text-input) - Text input fields with focus management
+- [SliderWidget](/widgets/slider) - Draggable sliders for selecting numeric values
+- [RadioButtonWidget](/widgets/radio-button) - Radio button groups for single selection
+- [DropdownWidget](/widgets/dropdown) - Dropdown menus for selecting from multiple options
+
+### Progress Indicators
+
+Widgets for showing progress and status:
+
+- [ProgressBarWidget](/widgets/progress-bar) - Horizontal progress bars
+- [CircularIndicatorWidget](/widgets/circular-indicator) - Circular progress indicators
+
+### Layout Widgets
+
+Widgets for arranging other widgets:
+
+- [Row & Column](/widgets/row-column) - Arrange children horizontally or vertically
+- [Center](/widgets/center) - Center a child widget
+- [Padding](/widgets/padding) - Add space around a widget
+- [Expanded](/widgets/expanded) - Expand to fill available space
+- [SizedBox](/widgets/sized-box) - Create fixed-size spacing
+
+## Base Widget Class
+
+All widgets inherit from the `Widget` base class, which provides:
+
+```cpp
+class Widget {
+public:
+    virtual void render() = 0;
+    virtual bool handleInput(const InputState& input) = 0;
+    
+    virtual void setPosition(int x, int y);
+    virtual int getX() const;
+    virtual int getY() const;
+    virtual void resize(int width, int height);
+    virtual int getWidth() const;
+    virtual int getHeight() const;
+};
+```
+
+## Common Patterns
+
+### Factory Functions
+
+Most widgets provide factory functions for easy creation:
+
+```cpp
+auto text = Text(TextConfig(100, 50, "Hello World")
+    .style(TextStyle().color(Colors::White).fontSize(20)));
+
+auto button = Button(ButtonConfig(100, 100, 120, 40, "Click Me"));
+```
+
+### Signals for Events
+
+Interactive widgets use signals to handle events:
+
+```cpp
+auto button = Button(ButtonConfig(50, 50, 100, 30, "Submit"));
+button->onClick.connect([]() {
+    std::cout << "Button clicked!" << std::endl;
+});
+```
+
+### Style Configuration
+
+Many widgets support fluent style configuration:
+
+```cpp
+TextStyle style;
+style.color(Colors::White)
+     .fontSize(18)
+     .useTTFFont("arial")
+     .alignment(1); // Center
+```
+
+### Preset Configurations
+
+Widgets often provide preset configurations for common use cases:
+
+```cpp
+auto primaryBtn = Button(ButtonPresets::Primary(10, 10, 100, 35, "Save"));
+auto dangerBtn = Button(ButtonPresets::Danger(120, 10, 100, 35, "Delete"));
+```
+
+## Widget Manager
+
+Widgets are automatically added to the widget manager when created with `addToManager = true` (the default for most factory functions):
+
+```cpp
+// Automatically added to manager
+auto text = Text(Point(100, 50), "Hello", 2, Colors::White);
+
+// Not added to manager (for manual management)
+auto text = Text(Point(100, 50), "Hello", 2, Colors::White, false);
+```
+
+## Next Steps
+
+- Learn about [Basic Widgets](/widgets/text) for displaying content
+- Explore [Interactive Widgets](/widgets/button) for user input
+- Master [Layout Widgets](/widgets/row-column) for arranging your UI

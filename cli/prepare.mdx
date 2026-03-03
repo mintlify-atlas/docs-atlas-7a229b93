@@ -1,0 +1,361 @@
+---
+title: prepare
+description: Build optimized production binaries for deployment
+---
+
+The `prepare` command builds production-ready, optimized binaries for specific platforms. Unlike `fire`, which is designed for development, `prepare` creates fully optimized builds for distribution.
+
+## Usage
+
+```bash
+fern prepare <platform>
+```
+
+## Arguments
+
+<ParamField path="platform" type="string" required>
+  Target platform: `web` or `linux`
+</ParamField>
+
+## Examples
+
+### Build for Web
+
+```bash
+fern prepare web
+```
+
+<CodeGroup>
+```bash Output
+Building for Web
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Found Fern project at: /home/user/my_app
+Found Fern source for web build at: ~/.fern/src/cpp
+Using cached Fern web library
+Compiling with Emscripten...
+
+Web build successful!
+Output: web/build/index.html
+
+Files generated:
+  • web/build/index.html
+  • web/build/index.js
+  • web/build/index.wasm
+
+To serve locally:
+  cd web/build
+  python3 -m http.server 8000
+  Open: http://localhost:8000/index.html
+```
+</CodeGroup>
+
+### Build for Linux
+
+```bash
+fern prepare linux
+```
+
+<CodeGroup>
+```bash Output
+Building for Linux
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Found Fern project at: /home/user/my_app
+Compiling for Linux...
+
+Linux build successful!
+Output: linux/build/my_app
+Size: 423.2 KB
+
+To run:
+  linux/build/my_app
+
+To distribute:
+  cp linux/build/my_app /path/to/distribution/
+```
+</CodeGroup>
+
+## Platforms
+
+### Web Platform
+
+Production web builds with maximum optimization:
+
+- **Compiler**: Emscripten (`emcc`)
+- **Optimization**: `-O3` (maximum)
+- **Output**: `web/build/index.html`, `index.js`, `index.wasm`
+- **WASM Features**: WebGL2, memory growth enabled
+- **Custom Template**: Uses `web/template.html` if present
+
+Build artifacts are ready for deployment to any static web host.
+
+### Linux Platform
+
+Optimized native Linux binaries:
+
+- **Compiler**: g++
+- **Optimization**: `-O3 -DNDEBUG`
+- **Output**: `linux/build/<project_name>`
+- **Permissions**: Automatically set to executable (`755`)
+- **Dependencies**: Linked statically where possible
+
+Binary is ready for distribution on Linux systems.
+
+## Build Comparison
+
+| Feature | `fern fire` | `fern prepare` |
+|---------|-------------|----------------|
+| Purpose | Development | Production |
+| Optimization | `-O2` (debug) | `-O3` (release) |
+| Build Time | Fast | Slower |
+| Binary Size | Larger | Smaller |
+| Performance | Good | Best |
+| Output Directory | `build/` | `<platform>/build/` |
+
+## Project Structure Requirements
+
+To use `prepare`, your project must have:
+
+```
+my_app/
+├── lib/
+│   └── main.cpp       # Required: Entry point
+├── fern.yaml          # Required: Configuration
+└── web/               # Optional: Platform directory
+    └── template.html  # Optional: Custom HTML template
+```
+
+## Output Structure
+
+### Web Build
+
+```
+web/build/
+├── index.html         # Entry point
+├── index.js           # JavaScript loader
+└── index.wasm         # WebAssembly binary
+```
+
+### Linux Build
+
+```
+linux/build/
+└── my_app             # Executable binary
+```
+
+## Deployment
+
+### Deploy Web Build
+
+<Steps>
+  <Step title="Build for web">
+    ```bash
+    fern prepare web
+    ```
+  </Step>
+  
+  <Step title="Test locally">
+    ```bash
+    cd web/build
+    python3 -m http.server 8000
+    # Visit http://localhost:8000/index.html
+    ```
+  </Step>
+  
+  <Step title="Deploy to hosting">
+    Upload `web/build/` contents to:
+    - Netlify
+    - Vercel
+    - GitHub Pages
+    - Any static host
+  </Step>
+</Steps>
+
+### Deploy Linux Build
+
+<Steps>
+  <Step title="Build for Linux">
+    ```bash
+    fern prepare linux
+    ```
+  </Step>
+  
+  <Step title="Test locally">
+    ```bash
+    ./linux/build/my_app
+    ```
+  </Step>
+  
+  <Step title="Create distribution package">
+    ```bash
+    mkdir -p dist
+    cp linux/build/my_app dist/
+    cp -r assets dist/  # If you have assets
+    tar czf my_app-linux.tar.gz dist/
+    ```
+  </Step>
+</Steps>
+
+## Optimization Levels
+
+### Debug (Development)
+
+Used by `fern fire`:
+- Optimization: `-O2`
+- Debug symbols: Included
+- Assertions: Enabled
+- Build time: Fast
+- File size: Large
+
+### Release (Production)
+
+Used by `fern prepare`:
+- Optimization: `-O3`
+- Debug symbols: Stripped
+- Assertions: Disabled (`-DNDEBUG`)
+- Build time: Slower
+- File size: Minimal
+
+## Web Build Details
+
+### Emscripten Flags
+
+Production web builds use:
+
+```bash
+-std=c++17          # C++17 standard
+-O3                 # Maximum optimization
+-s WASM=1           # WebAssembly output
+-s ALLOW_MEMORY_GROWTH=1
+-s USE_WEBGL2=1
+-s EXPORTED_FUNCTIONS=['_main']
+-s EXPORTED_RUNTIME_METHODS=['ccall','cwrap']
+```
+
+### Custom Templates
+
+To customize the HTML wrapper:
+
+1. Create `web/template.html` in your project
+2. Use `{{{ SCRIPT }}}` placeholder for the generated code
+3. Run `fern prepare web`
+
+Example template:
+
+```html
+<!doctype html>
+<html>
+<head>
+    <title>My App</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { 
+            margin: 0; 
+            background: #000; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        canvas { 
+            max-width: 100%; 
+            max-height: 100%; 
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <script>
+        var Module = { canvas: document.getElementById('canvas') };
+    </script>
+    {{{ SCRIPT }}}
+</body>
+</html>
+```
+
+## Linux Build Details
+
+### Compiler Flags
+
+Production Linux builds use:
+
+```bash
+-std=c++17          # C++17 standard
+-O3                 # Maximum optimization
+-DNDEBUG            # Disable assertions
+-I/usr/local/include # Fern headers
+-L/usr/local/lib    # Fern libraries
+-lfern              # Link Fern library
+-lX11 -lXext        # X11 libraries
+-lfontconfig        # Font support
+-lfreetype          # Font rendering
+```
+
+## Common Issues
+
+<AccordionGroup>
+  <Accordion title="Not in a Fern project directory">
+    ```bash
+    fern prepare web
+    # Error: Not in a Fern project directory
+    ```
+    
+    Solution: Navigate to a Fern project root (directory with `fern.yaml`).
+  </Accordion>
+  
+  <Accordion title="No main.cpp found">
+    ```bash
+    fern prepare linux
+    # Error: No main.cpp found in lib directory
+    ```
+    
+    Solution: Ensure `lib/main.cpp` exists in your project.
+  </Accordion>
+  
+  <Accordion title="Emscripten not found (web)">
+    ```bash
+    fern prepare web
+    # Error: Emscripten not found
+    ```
+    
+    Solution: Install Emscripten:
+    ```bash
+    git clone https://github.com/emscripten-core/emsdk.git
+    cd emsdk
+    ./emsdk install latest
+    ./emsdk activate latest
+    source ./emsdk_env.sh
+    ```
+  </Accordion>
+  
+  <Accordion title="Fern library not installed (linux)">
+    ```bash
+    fern prepare linux
+    # Error: Fern C++ library is not installed globally
+    ```
+    
+    Solution: Install Fern:
+    ```bash
+    cd /path/to/fern
+    ./install.sh
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Performance Benchmarks
+
+Typical build times and sizes for a medium-sized Fern project:
+
+| Platform | Build Time | Binary Size | Optimized |
+|----------|-----------|-------------|-----------|
+| Linux (debug) | 3s | 850 KB | No |
+| Linux (release) | 8s | 420 KB | Yes |
+| Web (debug) | 10s | 1.2 MB | No |
+| Web (release) | 25s | 650 KB | Yes |
+
+## Related Commands
+
+- [`fern fire`](/cli/fire) - Development builds and testing
+- [`fern web-cache`](/cli/web-cache) - Manage web build cache
+- [`fern bloom`](/cli/bloom) - Verify build dependencies

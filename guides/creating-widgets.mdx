@@ -1,0 +1,297 @@
+---
+title: Creating Custom Widgets
+description: Learn how to create custom widgets by extending the Widget base class
+---
+
+## Overview
+
+All UI components in Fern inherit from the `Widget` base class. Creating custom widgets gives you full control over rendering and input handling while integrating seamlessly with Fern's layout system.
+
+## Widget Base Class
+
+Every widget must implement two core methods:
+
+```cpp
+class Widget {
+public:
+    virtual void render() = 0;
+    virtual bool handleInput(const InputState& input) = 0;
+    
+    // Position and size management
+    virtual void setPosition(int x, int y);
+    virtual void resize(int width, int height);
+    virtual int getX() const;
+    virtual int getY() const;
+    virtual int getWidth() const;
+    virtual int getHeight() const;
+    
+protected:
+    int x_ = 0;
+    int y_ = 0;
+    int width_ = 0;
+    int height_ = 0;
+};
+```
+
+## Creating a Custom Widget
+
+<Steps>
+
+### Step 1: Define Your Widget Class
+
+Create a class that inherits from `Widget`:
+
+```cpp
+#include <fern/fern.hpp>
+
+class MyWidget : public Fern::Widget {
+public:
+    MyWidget(int x, int y, int width, int height) {
+        x_ = x;
+        y_ = y;
+        width_ = width;
+        height_ = height;
+    }
+    
+    void render() override {
+        // Rendering logic goes here
+    }
+    
+    bool handleInput(const Fern::InputState& input) override {
+        // Input handling logic
+        return false;
+    }
+};
+```
+
+### Step 2: Implement the Render Method
+
+Use Fern's drawing primitives to render your widget:
+
+```cpp
+void render() override {
+    // Draw background
+    Fern::Draw::fillRect(x_, y_, width_, height_, Fern::Colors::Blue);
+    
+    // Draw border
+    Fern::Draw::rect(x_, y_, width_, height_, Fern::Colors::White);
+    
+    // Draw text
+    Fern::Font::renderBitmap(
+        Fern::Canvas::getInstance(),
+        "Custom Widget",
+        x_ + 10,
+        y_ + 10,
+        2,  // size
+        Fern::Colors::White
+    );
+}
+```
+
+### Step 3: Implement Input Handling
+
+Handle mouse and keyboard events:
+
+```cpp
+bool handleInput(const Fern::InputState& input) override {
+    // Check if mouse is over widget
+    bool isHovered = input.mouseX >= x_ && 
+                     input.mouseX < x_ + width_ &&
+                     input.mouseY >= y_ && 
+                     input.mouseY < y_ + height_;
+    
+    if (isHovered && input.mousePressed) {
+        // Handle click
+        std::cout << "Widget clicked!" << std::endl;
+        return true;  // Input was handled
+    }
+    
+    return false;  // Input not handled
+}
+```
+
+### Step 4: Use Your Widget
+
+Create and add your widget to the scene:
+
+```cpp
+void setupUI() {
+    auto myWidget = std::make_shared<MyWidget>(100, 50, 200, 100);
+    Fern::addWidget(myWidget);
+}
+```
+
+</Steps>
+
+## Example: Custom Circle Button
+
+Here's a complete example of a custom circular button widget:
+
+```cpp
+class CircleButton : public Fern::Widget {
+public:
+    CircleButton(int x, int y, int radius, const std::string& label)
+        : radius_(radius), label_(label) {
+        x_ = x;
+        y_ = y;
+        width_ = radius * 2;
+        height_ = radius * 2;
+    }
+    
+    void render() override {
+        uint32_t color = isPressed_ ? Fern::Colors::DarkBlue :
+                        isHovered_ ? Fern::Colors::LightBlue :
+                        Fern::Colors::Blue;
+        
+        // Draw circle
+        Fern::Draw::fillCircle(x_ + radius_, y_ + radius_, radius_, color);
+        
+        // Draw label
+        int textWidth = label_.length() * 6;  // Approximate
+        Fern::Font::renderBitmap(
+            Fern::Canvas::getInstance(),
+            label_,
+            x_ + radius_ - textWidth / 2,
+            y_ + radius_ - 4,
+            2,
+            Fern::Colors::White
+        );
+    }
+    
+    bool handleInput(const Fern::InputState& input) override {
+        int dx = input.mouseX - (x_ + radius_);
+        int dy = input.mouseY - (y_ + radius_);
+        bool isHovered = (dx * dx + dy * dy) <= (radius_ * radius_);
+        
+        bool wasHovered = isHovered_;
+        isHovered_ = isHovered;
+        
+        if (isHovered && input.mousePressed && !wasPressed_) {
+            isPressed_ = true;
+            onClick.emit();  // Trigger signal
+        } else if (!input.mousePressed) {
+            isPressed_ = false;
+        }
+        
+        wasPressed_ = input.mousePressed;
+        return isHovered && input.mousePressed;
+    }
+    
+    Fern::Signal<> onClick;
+    
+private:
+    int radius_;
+    std::string label_;
+    bool isHovered_ = false;
+    bool isPressed_ = false;
+    bool wasPressed_ = false;
+};
+```
+
+<Tip>
+Return `true` from `handleInput()` when your widget consumes the input event to prevent it from propagating to widgets below.
+</Tip>
+
+## Widget State Management
+
+Track widget state with member variables:
+
+```cpp
+class ToggleWidget : public Fern::Widget {
+public:
+    void render() override {
+        uint32_t color = isToggled_ ? Fern::Colors::Green : Fern::Colors::Red;
+        Fern::Draw::fillRect(x_, y_, width_, height_, color);
+    }
+    
+    bool handleInput(const Fern::InputState& input) override {
+        bool isHovered = /* check bounds */;
+        if (isHovered && input.mousePressed && !wasPressed_) {
+            isToggled_ = !isToggled_;  // Toggle state
+            onToggle.emit(isToggled_);
+        }
+        wasPressed_ = input.mousePressed;
+        return isHovered && input.mousePressed;
+    }
+    
+    Fern::Signal<bool> onToggle;
+    
+private:
+    bool isToggled_ = false;
+    bool wasPressed_ = false;
+};
+```
+
+## Factory Functions
+
+Create factory functions for easier widget creation:
+
+```cpp
+std::shared_ptr<CircleButton> CreateCircleButton(
+    int x, int y, int radius, const std::string& label,
+    bool addToManager = true
+) {
+    auto widget = std::make_shared<CircleButton>(x, y, radius, label);
+    if (addToManager) {
+        Fern::addWidget(widget);
+    }
+    return widget;
+}
+
+// Usage
+auto btn = CreateCircleButton(100, 100, 30, "Click");
+btn->onClick.connect([]() {
+    std::cout << "Clicked!" << std::endl;
+});
+```
+
+## Responsive Widgets
+
+Implement `ResponsiveWidget` to handle window resize:
+
+```cpp
+class MyResponsiveWidget : public Fern::Widget, 
+                          public Fern::ResponsiveWidget {
+public:
+    void onWindowResize(int newWidth, int newHeight) override {
+        // Reposition or resize widget
+        x_ = newWidth / 2 - width_ / 2;  // Center horizontally
+        y_ = newHeight / 2 - height_ / 2;  // Center vertically
+    }
+};
+```
+
+<Note>
+Widgets implementing `ResponsiveWidget` automatically receive window resize events when registered with the widget manager.
+</Note>
+
+## Best Practices
+
+<Tabs>
+  <Tab title="Rendering">
+    - Cache calculated values instead of recomputing every frame
+    - Use the `isHovered_` pattern to avoid unnecessary re-renders
+    - Minimize draw calls by batching operations
+    - Use `Draw::fillRect()` for backgrounds before detailed rendering
+  </Tab>
+  
+  <Tab title="Input">
+    - Always check bounds before handling input
+    - Track previous input state to detect edges (pressed vs. holding)
+    - Return `true` only when input is actually consumed
+    - Use signals for event notification instead of callbacks
+  </Tab>
+  
+  <Tab title="Memory">
+    - Use `std::shared_ptr` for all widgets
+    - Let the widget manager handle lifetime
+    - Avoid circular references with signals
+    - Clean up resources in destructor
+  </Tab>
+</Tabs>
+
+## Next Steps
+
+- Learn about [Layouts](/guides/layouts) to arrange multiple widgets
+- Explore [Signals and Slots](/guides/signals-slots) for event handling
+- Check out [Styling](/guides/styling) for visual customization

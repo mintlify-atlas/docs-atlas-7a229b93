@@ -1,0 +1,157 @@
+---
+title: Canvas
+description: Core canvas class for pixel-level rendering operations
+---
+
+The Canvas class provides low-level access to the pixel buffer used for rendering. It abstracts the underlying pixel buffer and provides safe, efficient pixel manipulation methods.
+
+All pixels are stored in 32-bit RGBA format (0xAABBGGRR) where:
+- AA = Alpha (transparency)
+- BB = Blue component
+- GG = Green component
+- RR = Red component
+
+## Constructor
+
+### Canvas()
+
+```cpp
+Canvas(uint32_t* buffer, int width, int height)
+```
+
+Creates a canvas that operates on the provided pixel buffer. The buffer must remain valid for the lifetime of the canvas.
+
+<ParamField path="buffer" type="uint32_t*" required>
+  Pointer to 32-bit RGBA pixel array
+</ParamField>
+
+<ParamField path="width" type="int" required>
+  Canvas width in pixels
+</ParamField>
+
+<ParamField path="height" type="int" required>
+  Canvas height in pixels
+</ParamField>
+
+<Warning>
+The pixel buffer must be at least (width * height * 4) bytes. The canvas does not take ownership of the buffer.
+</Warning>
+
+## Methods
+
+### clear()
+
+```cpp
+void clear(uint32_t color)
+```
+
+Fills all pixels in the canvas with the specified color value. This is an efficient way to reset the canvas for a new frame.
+
+<ParamField path="color" type="uint32_t" required>
+  32-bit RGBA color value (0xAABBGGRR format)
+</ParamField>
+
+```cpp
+canvas.clear(0xFF000000);  // Clear to opaque black
+canvas.clear(0x00000000);  // Clear to transparent
+```
+
+### setPixel()
+
+```cpp
+void setPixel(int x, int y, uint32_t color)
+```
+
+Sets the pixel at the given coordinates to the specified color. Coordinates are automatically bounds-checked for safety.
+
+<ParamField path="x" type="int" required>
+  X-coordinate (0 to width-1)
+</ParamField>
+
+<ParamField path="y" type="int" required>
+  Y-coordinate (0 to height-1)
+</ParamField>
+
+<ParamField path="color" type="uint32_t" required>
+  32-bit RGBA color value
+</ParamField>
+
+<Note>
+Coordinates outside the canvas bounds are silently ignored.
+</Note>
+
+### getPixel()
+
+```cpp
+uint32_t getPixel(int x, int y) const
+```
+
+Retrieves the color value of the pixel at the given coordinates.
+
+<ParamField path="x" type="int" required>
+  X-coordinate (0 to width-1)
+</ParamField>
+
+<ParamField path="y" type="int" required>
+  Y-coordinate (0 to height-1)
+</ParamField>
+
+<ResponseField name="return" type="uint32_t">
+  32-bit RGBA color value, or 0 if out of bounds
+</ResponseField>
+
+### getWidth()
+
+```cpp
+int getWidth() const
+```
+
+<ResponseField name="return" type="int">
+  Canvas width in pixels
+</ResponseField>
+
+### getHeight()
+
+```cpp
+int getHeight() const
+```
+
+<ResponseField name="return" type="int">
+  Canvas height in pixels
+</ResponseField>
+
+### getBuffer()
+
+```cpp
+uint32_t* getBuffer() const
+```
+
+Returns a pointer to the underlying pixel buffer for advanced operations.
+
+<ResponseField name="return" type="uint32_t*">
+  Pointer to the pixel buffer array containing (width * height) 32-bit pixels
+</ResponseField>
+
+<Warning>
+Direct buffer access bypasses bounds checking. Use with caution and ensure proper bounds checking.
+</Warning>
+
+## Global Instance
+
+```cpp
+extern Canvas* globalCanvas;
+```
+
+This global canvas instance is used by all drawing operations in Fern. It is automatically initialized when `Fern::initialize()` is called.
+
+## Example Usage
+
+```cpp
+uint32_t* buffer = new uint32_t[800 * 600];
+Canvas canvas(buffer, 800, 600);
+
+canvas.clear(0xFF000000);  // Clear to black
+canvas.setPixel(100, 50, 0xFFFF0000);  // Set red pixel at (100, 50)
+
+uint32_t pixel = canvas.getPixel(100, 50);  // Read pixel
+```

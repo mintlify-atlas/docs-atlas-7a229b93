@@ -1,0 +1,346 @@
+---
+title: fire
+description: Run and build Fern applications for different platforms
+---
+
+The `fire` command compiles and runs Fern applications. It can build single files for quick testing or entire projects with full configuration.
+
+## Usage
+
+```bash
+fern fire [options] [file]
+```
+
+## Options
+
+<ParamField path="-p, --platform" type="string" default="linux">
+  Target platform: `linux`, `web`, or `macos`
+</ParamField>
+
+<ParamField path="-h, --help" type="flag">
+  Show help for the fire command
+</ParamField>
+
+## Arguments
+
+<ParamField path="file" type="string">
+  Optional C++ source file to compile and run. If omitted, builds the current project.
+</ParamField>
+
+## Examples
+
+### Run Current Project
+
+```bash
+fern fire
+```
+
+<CodeGroup>
+```bash Output
+Running Fern Project (linux)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Found Fern project at: /home/user/my_app
+Loaded project configuration from fern.yaml
+Building project for linux...
+Compiling...
+Build successful!
+
+🔥 Fern Fire started!
+
+Running /home/user/my_app/build/main...
+🌿 Starting my_app...
+```
+</CodeGroup>
+
+### Run for Web Platform
+
+```bash
+fern fire -p web
+```
+
+<CodeGroup>
+```bash Output
+Running Fern Project (web)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Found Fern project at: /home/user/my_app
+Using cached Fern web library
+Compiling for web...
+Build successful!
+
+Starting local web server...
+🔥 Fern Fire started (web)!
+
+Open your browser to: http://localhost:3000/main.html
+Press Ctrl+C to stop the server
+```
+</CodeGroup>
+
+### Run Single File
+
+```bash
+fern fire examples/hello.cpp
+```
+
+<CodeGroup>
+```bash Output
+Running examples/hello.cpp (linux)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Building single file for linux...
+Compiling...
+Build successful!
+
+🔥 Fern Fire started!
+
+Running build/hello_temp...
+```
+</CodeGroup>
+
+### Run Single File for Web
+
+```bash
+fern fire -p web main.cpp
+```
+
+This builds the file as a web application and starts a local server.
+
+## Platforms
+
+### Linux (Native)
+
+Builds and runs a native Linux application:
+
+- Uses `g++` compiler
+- Links against system X11 libraries
+- Creates executable in `build/` directory
+- Runs immediately after successful build
+
+### Web (WebAssembly)
+
+Builds for web using Emscripten:
+
+- Uses `emcc` compiler
+- Compiles to WebAssembly (.wasm)
+- Uses precompiled Fern web library for faster builds
+- Starts local HTTP server on port 3000 (or configured port)
+- Opens browser automatically
+- Generates `main.html`, `main.js`, and `main.wasm`
+
+### macOS (Experimental)
+
+Builds for macOS using native frameworks:
+
+- Uses `clang++` compiler
+- Links against Cocoa framework
+- Uses Homebrew libraries for fontconfig/freetype
+- Creates native macOS executable
+
+## Project vs Single File
+
+### Project Mode
+
+When run without a file argument:
+
+- Searches for `fern.yaml` in current directory and parents
+- Builds `lib/main.cpp` from project root
+- Uses project configuration settings
+- Outputs to platform-specific directories (`build/`, `web/build/`, `linux/build/`)
+
+### Single File Mode
+
+When run with a file argument:
+
+- Compiles the specified file
+- Creates temporary executable in `build/` directory
+- Uses minimal configuration
+- Ideal for quick testing and examples
+
+## Web Build Cache
+
+Fire uses an intelligent caching system for web builds:
+
+- **Precompiled Library** - Fern source is compiled once to `~/.fern/cache/web/libfern_web.a`
+- **Incremental Builds** - Only your code is recompiled on subsequent builds
+- **Cache Invalidation** - Automatically rebuilds if Fern source changes
+- **Manual Control** - Use `fern web-cache` to manage the cache
+
+This dramatically speeds up web builds from ~30 seconds to ~5 seconds.
+
+## Build Output
+
+### Linux
+
+```
+build/
+└── main              # Executable binary
+```
+
+### Web
+
+```
+build/
+├── main.html        # HTML entry point
+├── main.js          # JavaScript loader
+└── main.wasm        # WebAssembly binary
+```
+
+## Configuration
+
+Web server settings from `fern.yaml`:
+
+```yaml
+platforms:
+  web:
+    enabled: true
+    port: 3000      # Server port (default: 8000)
+```
+
+## Common Workflows
+
+### Development Loop
+
+```bash
+# Edit code
+vim lib/main.cpp
+
+# Test locally
+fern fire
+
+# Test on web
+fern fire -p web
+```
+
+### Testing Examples
+
+```bash
+# Run an example
+fern fire examples/shapes.cpp
+
+# Run example for web
+fern fire -p web examples/shapes.cpp
+```
+
+## Error Handling
+
+<AccordionGroup>
+  <Accordion title="Not in a Fern project directory">
+    ```bash
+    fern fire
+    # Error: Not in a Fern project directory
+    # Run 'fern sprout <project_name>' to create a new project
+    ```
+    
+    Solution: Navigate to a Fern project or create one with `fern sprout`.
+  </Accordion>
+  
+  <Accordion title="No main.cpp found">
+    ```bash
+    fern fire
+    # Error: No main.cpp found in lib directory
+    ```
+    
+    Solution: Create `lib/main.cpp` with your application code.
+  </Accordion>
+  
+  <Accordion title="Emscripten not found">
+    ```bash
+    fern fire -p web
+    # Error: Emscripten not found
+    ```
+    
+    Solution: Install and activate Emscripten (see `fern bloom --troubleshoot`).
+  </Accordion>
+  
+  <Accordion title="Compilation failed">
+    Fire displays compiler errors directly. Common issues:
+    
+    - Missing `#include` statements
+    - Syntax errors in C++ code
+    - Missing Fern headers (run `fern bloom` to check installation)
+  </Accordion>
+  
+  <Accordion title="Port already in use">
+    ```bash
+    fern fire -p web
+    # Port 3000 is already in use
+    ```
+    
+    Fire automatically finds the next available port (3001, 3002, etc.).
+  </Accordion>
+</AccordionGroup>
+
+## Web Server Features
+
+When running with `-p web`:
+
+- **Auto-reload** - Refresh browser to see changes after recompiling
+- **Graceful shutdown** - Press Ctrl+C to stop server cleanly
+- **Port selection** - Automatically finds available port if default is in use
+- **Browser launch** - Opens browser automatically to your app
+- **Custom template** - Uses `web/template.html` if present
+
+## Performance Tips
+
+### Web Builds
+
+1. **First build** is slower (~30s) as it compiles the Fern library
+2. **Subsequent builds** are fast (~5s) using cached library
+3. **Clear cache** with `fern web-cache clear` if you update Fern source
+4. **Check cache** with `fern web-cache status` to verify it's current
+
+### Native Builds
+
+1. **Debug builds** (default) are faster to compile but slower to run
+2. **Production builds** use `fern prepare linux` for optimized binaries
+3. **Incremental builds** are automatic when supported
+
+## Advanced Usage
+
+### Custom Port
+
+```bash
+# Modify fern.yaml
+platforms:
+  web:
+    port: 9000
+```
+
+Then run:
+
+```bash
+fern fire -p web  # Uses port 9000
+```
+
+### Custom Web Template
+
+Create `web/template.html` to customize the HTML wrapper:
+
+```html
+<!doctype html>
+<html>
+<head>
+    <title>My Custom App</title>
+    <style>
+        /* Custom styles */
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <script>
+        var Module = { canvas: document.getElementById('canvas') };
+    </script>
+    {{{ SCRIPT }}}
+</body>
+</html>
+```
+
+The `{{{ SCRIPT }}}` placeholder is replaced with the generated JavaScript.
+
+## Related Commands
+
+- [`fern prepare`](/cli/prepare) - Build optimized production binaries
+- [`fern web-cache`](/cli/web-cache) - Manage web build cache
+- [`fern bloom`](/cli/bloom) - Check dependencies before building
+- [`fern sprout`](/cli/sprout) - Create a new project to run

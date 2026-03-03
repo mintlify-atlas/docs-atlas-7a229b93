@@ -1,0 +1,518 @@
+---
+title: Widget System
+description: Deep dive into Fern's widget architecture, lifecycle, and implementation patterns
+---
+
+Widgets are the fundamental building blocks of Fern applications. This guide explores the widget system's architecture, lifecycle management, and implementation patterns.
+
+## Widget Interface
+
+All widgets in Fern inherit from the base `Widget` class, which defines the core contract:
+
+```cpp
+class Widget {
+public:
+    virtual ~Widget() = default;
+    
+    // Core interface - must implement
+    virtual void render() = 0;
+    virtual bool handleInput(const InputState& input) = 0;
+    
+    // Position and size management
+    virtual void setPosition(int x, int y);
+    virtual int getX() const;
+    virtual int getY() const;
+    virtual void resize(int width, int height);
+    virtual int getWidth() const;
+    virtual int getHeight() const;
+    
+protected:
+    int x_ = 0;
+    int y_ = 0;
+    int width_ = 0;
+    int height_ = 0;
+};
+```
+
+This minimal interface enables maximum flexibility while ensuring consistency across all widget types.
+
+## Widget Lifecycle
+
+### Creation
+
+Widgets are typically created using factory functions that return `std::shared_ptr<Widget>`:
+
+```cpp
+auto button = Button(ButtonConfig(100, 100, 120, 40, "Click Me"));
+// Returns: std::shared_ptr<ButtonWidget>
+```
+
+### Registration
+
+Widgets must be added to the WidgetManager to participate in rendering and input:
+
+```cpp
+WidgetManager::getInstance().addWidget(button);
+// Or use the convenience function:
+addWidget(button);
+```
+
+Once registered:
+- Widget appears in the render list
+- Widget receives input events
+- Widget persists until explicitly removed
+
+### Update Phase
+
+Each frame, the WidgetManager distributes input to widgets:
+
+```cpp
+void WidgetManager::updateAll(const InputState& input) {
+    bool inputHandled = false;
+    // Iterate in reverse (top to bottom Z-order)
+    for (auto it = widgets_.rbegin(); it != widgets_.rend(); ++it) {
+        if (!inputHandled) {
+            inputHandled = (*it)->handleInput(input);
+        }
+    }
+}
+```
+
+**Key characteristics:**
+- Reverse iteration (top widgets first)
+- First widget to return `true` stops propagation
+- Allows proper click handling on overlapping widgets
+
+### Render Phase
+
+Widgets render in the order they were added (bottom to top):
+
+```cpp
+void WidgetManager::renderAll() {
+    for (auto& widget : widgets_) {
+        widget->render();
+    }
+}
+```
+
+This creates proper visual layering where newer widgets appear on top.
+
+### Removal
+
+Widgets can be removed explicitly:
+
+```cpp
+WidgetManager::getInstance().removeWidget(button);
+// Or remove all:
+WidgetManager::getInstance().clear();
+```
+
+Widgets are automatically destroyed when:
+- Removed from WidgetManager and no other references exist
+- WidgetManager is cleared
+- Application shuts down
+
+## Widget Implementation Patterns
+
+### Display-Only Widgets
+
+Widgets that only render (no interaction):
+
+```cpp
+class CircleWidget : public Widget {
+public:
+    CircleWidget(int radius, Point center, uint32_t color)
+        : radius_(radius), center_(center), color_(color) {}
+    
+    void render() override {
+        Draw::circle(center_.x, center_.y, radius_, color_);
+    }
+    
+    bool handleInput(const InputState& input) override {
+        return false;  // No interaction
+    }
+    
+private:
+    int radius_;
+    Point center_;
+    uint32_t color_;
+};
+```
+
+### Interactive Widgets
+
+Widgets with user interaction use the signal/slot pattern:
+
+```cpp
+class ButtonWidget : public Widget {
+public:
+    Signal<> onClick;  // Signal emitted on click
+    
+    void render() override {
+        uint32_t bgColor = isHovered_ ? hoverColor_ : normalColor_;
+        Draw::roundedRect(x_, y_, width_, height_, borderRadius_, bgColor);
+        // Render text...
+    }
+    
+    bool handleInput(const InputState& input) override {
+        bool wasHovered = isHovered_;
+        isHovered_ = isPointInside(input.mouseX, input.mouseY);
+        
+        if (isHovered_ && input.mouseClicked) {
+            onClick.emit();  // Notify listeners
+            return true;      // Event handled
+        }
+        
+        return false;
+    }
+    
+private:
+    bool isHovered_ = false;
+    uint32_t normalColor_;
+    uint32_t hoverColor_;
+    int borderRadius_;
+    
+    bool isPointInside(int px, int py) const {
+        return px >= x_ && px < x_ + width_ &&
+               py >= y_ && py < y_ + height_;
+    }
+};
+```
+
+### Stateful Widgets
+
+Widgets that maintain internal state:
+
+```cpp
+class SliderWidget : public Widget {
+public:
+    Signal<float> onValueChanged;
+    
+    void render() override {
+        // Draw slider track
+        Draw::roundedRect(x_, y_, width_, height_, 3, trackColor_);
+        
+        // Draw slider thumb
+        int thumbX = x_ + (int)(value_ * (width_ - thumbWidth_));
+        Draw::roundedRect(thumbX, y_, thumbWidth_, height_, 5, thumbColor_);
+    }
+    
+    bool handleInput(const InputState& input) override {
+        if (input.mouseDown && isPointInside(input.mouseX, input.mouseY)) {
+            isDragging_ = true;
+        }
+        
+        if (!input.mouseDown) {
+            isDragging_ = false;
+        }
+        
+        if (isDragging_) {
+            float oldValue = value_;
+            value_ = std::clamp(
+                (float)(input.mouseX - x_) / width_,
+                0.0f, 1.0f
+            );
+            
+            if (value_ != oldValue) {
+                onValueChanged.emit(value_);
+            }
+            return true;
+        }
+        
+        return false;
+    }
+    
+private:
+    float value_ = 0.5f;
+    bool isDragging_ = false;
+    int thumbWidth_ = 20;
+    uint32_t trackColor_;
+    uint32_t thumbColor_;
+};
+```
+
+### Layout Widgets
+
+Widgets that contain and arrange children:
+
+```cpp
+class LayoutWidget : public Widget {
+public:
+    void render() override {
+        for (auto& child : children_) {
+            child->render();
+        }
+    }
+    
+    bool handleInput(const InputState& input) override {
+        // Reverse iteration for proper Z-order
+        for (auto it = children_.rbegin(); it != children_.rend(); ++it) {
+            if ((*it)->handleInput(input)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    void setPosition(int x, int y) override {
+        int deltaX = x - x_;
+        int deltaY = y - y_;
+        
+        x_ = x;
+        y_ = y;
+        
+        // Move all children by the same delta
+        for (auto& child : children_) {
+            child->setPosition(
+                child->getX() + deltaX,
+                child->getY() + deltaY
+            );
+        }
+    }
+    
+protected:
+    virtual void arrangeChildren() = 0;
+    std::vector<std::shared_ptr<Widget>> children_;
+};
+```
+
+## Widget Manager Architecture
+
+The WidgetManager is a singleton that coordinates all widgets:
+
+```cpp
+class WidgetManager {
+public:
+    static WidgetManager& getInstance() {
+        static WidgetManager instance;
+        return instance;
+    }
+    
+    void addWidget(std::shared_ptr<Widget> widget) {
+        widgets_.push_back(widget);
+    }
+    
+    void removeWidget(std::shared_ptr<Widget> widget) {
+        widgets_.erase(
+            std::remove_if(widgets_.begin(), widgets_.end(),
+                [&widget](const auto& w) { return w == widget; }),
+            widgets_.end()
+        );
+    }
+    
+    void updateAll(const InputState& input);
+    void renderAll();
+    void clear();
+    void onWindowResize(int newWidth, int newHeight);
+    
+private:
+    WidgetManager() = default;
+    std::vector<std::shared_ptr<Widget>> widgets_;
+};
+```
+
+### Z-Order Management
+
+Z-order (visual layering) is determined by insertion order:
+
+```cpp
+addWidget(background);  // Rendered first (bottom)
+addWidget(middleLayer); // Rendered second (middle)
+addWidget(topLayer);    // Rendered last (top)
+```
+
+Input is processed in reverse order:
+```cpp
+topLayer.handleInput();     // Gets input first
+middleLayer.handleInput();  // Only if topLayer didn't handle
+background.handleInput();   // Only if others didn't handle
+```
+
+## Widget Configuration Patterns
+
+Many widgets use configuration structs for initialization:
+
+```cpp
+struct ButtonConfig {
+    int x, y, width, height;
+    std::string text;
+    uint32_t normalColor = Colors::Blue;
+    uint32_t hoverColor = Colors::LightBlue;
+    uint32_t textColor = Colors::White;
+    int borderRadius = 5;
+    int fontSize = 2;
+};
+
+auto button = Button(ButtonConfig {
+    .x = 100,
+    .y = 100,
+    .width = 120,
+    .height = 40,
+    .text = "Click Me",
+    .borderRadius = 10
+});
+```
+
+This pattern provides:
+- Named parameters (clear intent)
+- Default values (minimal configuration)
+- Easy customization (override specific values)
+- Forward compatibility (add new fields without breaking existing code)
+
+## Widget Communication
+
+### Signals and Slots
+
+The primary communication mechanism:
+
+```cpp
+auto button = Button(config);
+auto text = Text(Point(0, 60), "Not clicked", 2, Colors::White);
+
+button->onClick.connect([text]() {
+    text->setText("Button clicked!");
+});
+```
+
+### Shared State
+
+Using static or global variables:
+
+```cpp
+static int clickCount = 0;
+static std::shared_ptr<TextWidget> counterDisplay;
+
+void setupUI() {
+    counterDisplay = Text(Point(10, 10), "Clicks: 0", 2, Colors::White);
+    
+    auto button = Button(ButtonConfig(10, 50, 120, 40, "Click"));
+    button->onClick.connect([]() {
+        clickCount++;
+        counterDisplay->setText("Clicks: " + std::to_string(clickCount));
+    });
+    
+    addWidget(counterDisplay);
+    addWidget(button);
+}
+```
+
+### Parent-Child Communication
+
+Layout widgets coordinate with children:
+
+```cpp
+class ColumnWidget : public LayoutWidget {
+protected:
+    void arrangeChildren() override {
+        int currentY = y_;
+        for (auto& child : children_) {
+            child->setPosition(x_, currentY);
+            currentY += child->getHeight() + spacing_;
+        }
+    }
+};
+```
+
+## Responsive Widgets
+
+Widgets can respond to window resize events:
+
+```cpp
+class ResponsiveWidget {
+public:
+    virtual ~ResponsiveWidget() = default;
+    virtual void onWindowResize(int newWidth, int newHeight) = 0;
+};
+
+class CenterWidget : public LayoutWidget, public ResponsiveWidget {
+public:
+    void onWindowResize(int newWidth, int newHeight) override {
+        resize(newWidth, newHeight);
+        arrangeChildren();  // Recenter content
+    }
+};
+```
+
+The WidgetManager automatically notifies responsive widgets:
+
+```cpp
+void WidgetManager::onWindowResize(int newWidth, int newHeight) {
+    for (auto& widget : widgets_) {
+        auto responsive = dynamic_cast<ResponsiveWidget*>(widget.get());
+        if (responsive) {
+            responsive->onWindowResize(newWidth, newHeight);
+        }
+    }
+}
+```
+
+## Performance Considerations
+
+### Rendering Performance
+
+- Each widget's `render()` is called every frame
+- Avoid heavy computations in `render()`
+- Cache calculated values when possible
+- Use dirty flags for conditional rendering
+
+### Input Processing
+
+- Input distribution is O(n) with early exit
+- Proper bounds checking prevents unnecessary processing
+- Return `true` from `handleInput()` to stop propagation
+
+### Memory Management
+
+- Use `std::shared_ptr` for widget ownership
+- Avoid circular references between widgets
+- Clear widgets when transitioning scenes
+- Let WidgetManager manage lifecycle
+
+## Best Practices
+
+### Widget Design
+
+1. **Single Responsibility**: Each widget should have one clear purpose
+2. **Composability**: Build complex widgets from simple ones
+3. **Configurability**: Use config structs for flexible initialization
+4. **Signals for Events**: Use signal/slot for external communication
+
+### Implementation Guidelines
+
+```cpp
+// Good: Clear, focused widget
+class ProgressBar : public Widget {
+public:
+    void setValue(float value);
+    void render() override;
+    bool handleInput(const InputState& input) override;
+};
+
+// Avoid: Widget doing too much
+class SuperWidget : public Widget {
+    // Handles input, manages state, performs calculations,
+    // communicates with network, etc.
+};
+```
+
+### Resource Management
+
+```cpp
+// Good: Let shared_ptr manage lifetime
+auto button = Button(config);
+addWidget(button);
+// Widget persists until removed from manager
+
+// Good: Clear when transitioning scenes
+void switchScene() {
+    WidgetManager::getInstance().clear();
+    setupNewScene();
+}
+```
+
+## See Also
+
+- [Architecture Overview](/core/architecture) - Overall system design
+- [Layout Engine](/core/layout-engine) - Layout widget details
+- [Event System](/core/event-system) - Signal/slot communication
+- [Rendering Pipeline](/core/rendering) - How widgets render to screen

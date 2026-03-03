@@ -1,0 +1,317 @@
+---
+title: Padding Widget
+description: Add space around widgets
+---
+
+PaddingWidget creates space around a child widget by applying padding on all four sides with configurable values for each edge.
+
+## Basic Usage
+
+```cpp
+#include <fern/fern.hpp>
+
+using namespace Fern;
+
+auto button = Button(ButtonConfig(0, 0, 100, 30, "Click"));
+auto padded = Padding(button, 10);  // 10px on all sides
+```
+
+## Constructor
+
+```cpp
+PaddingWidget(int x, int y, int width, int height,
+              int left, int top, int right, int bottom)
+```
+
+<ParamField path="x" type="int">
+  X position of the padding container
+</ParamField>
+
+<ParamField path="y" type="int">
+  Y position of the padding container
+</ParamField>
+
+<ParamField path="width" type="int">
+  Total width including padding
+</ParamField>
+
+<ParamField path="height" type="int">
+  Total height including padding
+</ParamField>
+
+<ParamField path="left" type="int">
+  Left padding in pixels
+</ParamField>
+
+<ParamField path="top" type="int">
+  Top padding in pixels
+</ParamField>
+
+<ParamField path="right" type="int">
+  Right padding in pixels
+</ParamField>
+
+<ParamField path="bottom" type="int">
+  Bottom padding in pixels
+</ParamField>
+
+## Factory Functions
+
+### Uniform Padding
+
+```cpp
+std::shared_ptr<PaddingWidget> Padding(
+    std::shared_ptr<Widget> child,
+    int all,
+    bool addToManager = false
+)
+```
+
+Applies the same padding to all sides.
+
+### Custom Padding
+
+```cpp
+std::shared_ptr<PaddingWidget> Padding(
+    std::shared_ptr<Widget> child,
+    int left, int top, int right, int bottom,
+    bool addToManager = false
+)
+```
+
+Applies different padding to each side.
+
+## Methods
+
+### Adding Children
+
+```cpp
+void add(std::shared_ptr<Widget> child)
+```
+
+## Examples
+
+### Uniform Padding
+
+```cpp
+auto button = Button(ButtonConfig(0, 0, 100, 30, "Click Me"));
+auto padded = Padding(button, 10);  // 10px on all sides
+```
+
+### Custom Padding Per Side
+
+```cpp
+auto text = Text(Point(0, 0), "Padded Text", 2, Colors::White);
+auto padded = Padding(text, 20, 10, 20, 10);  // left, top, right, bottom
+```
+
+### Padding Around a Column
+
+```cpp
+auto column = Column({
+    Text(Point(0, 0), "Title", 3, Colors::White),
+    Text(Point(0, 0), "Content", 2, Colors::Gray)
+});
+
+auto padded = Padding(column, 20);  // Add space around the entire column
+```
+
+### Horizontal Padding Only
+
+```cpp
+auto button = Button(ButtonConfig(0, 0, 100, 30, "Button"));
+auto padded = Padding(button, 30, 0, 30, 0);  // 30px left/right, 0px top/bottom
+```
+
+### Vertical Padding Only
+
+```cpp
+auto text = Text(Point(0, 0), "Text", 2, Colors::White);
+auto padded = Padding(text, 0, 20, 0, 20);  // 0px left/right, 20px top/bottom
+```
+
+### Padding in a Row
+
+```cpp
+auto button1 = Button(ButtonConfig(0, 0, 80, 30, "First"));
+auto button2 = Button(ButtonConfig(0, 0, 80, 30, "Second"));
+
+auto row = Row({
+    Padding(button1, 10),  // Pad each button individually
+    Padding(button2, 10)
+});
+```
+
+### Asymmetric Padding
+
+```cpp
+auto widget = Text(Point(0, 0), "Asymmetric", 2, Colors::White);
+auto padded = Padding(widget, 5, 10, 15, 20);
+// 5px left, 10px top, 15px right, 20px bottom
+```
+
+### Padding for Card-like Layout
+
+```cpp
+auto cardContent = Column({
+    Text(Point(0, 0), "Card Title", 3, Colors::White),
+    SizedBox(0, 10),
+    Text(Point(0, 0), "Card content goes here...", 2, Colors::Gray),
+    SizedBox(0, 20),
+    Button(ButtonConfig(0, 0, 100, 30, "Action"))
+});
+
+auto card = Padding(cardContent, 25);  // Card-like padding
+```
+
+### Nested Padding
+
+```cpp
+auto innerContent = Text(Point(0, 0), "Inner", 2, Colors::White);
+auto innerPadded = Padding(innerContent, 10);
+auto outerPadded = Padding(innerPadded, 15);
+// Total: 25px padding on all sides
+```
+
+### Padding with Background
+
+Combine with Container for visual padding:
+
+```cpp
+auto content = Column({
+    Text(Point(0, 0), "Title", 3, Colors::White),
+    Text(Point(0, 0), "Description", 2, Colors::Gray)
+});
+
+auto paddedContent = Padding(content, 20);
+auto container = Container(Colors::DarkGray, 0, 0, 300, 150, paddedContent);
+```
+
+## Complete Example
+
+```cpp
+#include <fern/fern.hpp>
+
+using namespace Fern;
+
+void setupUI() {
+    // Create a form with consistent padding
+    auto title = Text(Point(0, 0), "Settings", 3, Colors::White);
+    
+    auto input1 = TextInput(TextInputConfig(0, 0, 200, 30)
+        .placeholder("Name"));
+    auto input2 = TextInput(TextInputConfig(0, 0, 200, 30)
+        .placeholder("Email"));
+    
+    auto saveBtn = Button(ButtonConfig(0, 0, 200, 35, "Save"));
+    
+    auto form = Column({
+        title,
+        SizedBox(0, 20),
+        input1,
+        SizedBox(0, 15),
+        input2,
+        SizedBox(0, 25),
+        saveBtn
+    });
+    
+    // Add padding around the entire form
+    auto paddedForm = Padding(form, 30);
+    
+    auto centered = Center(paddedForm);
+    addWidget(centered);
+}
+```
+
+## Common Padding Values
+
+### Standard Spacing
+
+- **Tight**: 5-10px - Minimal spacing
+- **Normal**: 15-20px - Standard spacing
+- **Loose**: 25-40px - Generous spacing
+
+### Use Cases
+
+```cpp
+// Tight padding for compact UIs
+auto tight = Padding(widget, 8);
+
+// Normal padding for standard layouts
+auto normal = Padding(widget, 20);
+
+// Loose padding for spacious designs
+auto loose = Padding(widget, 30);
+```
+
+## Layout Example
+
+From `examples/cpp/new/complete_layout_showcase.cpp`:
+
+```cpp
+auto leftColumn = Column({
+    Text(Point(0, 0), "Left Panel", 2, Colors::Cyan),
+    SizedBox(0, 20),
+    volumeSlider,
+    brightnessSlider
+});
+
+auto rightColumn = Column({
+    Text(Point(0, 0), "Right Panel", 2, Colors::Cyan),
+    SizedBox(0, 20),
+    searchBox
+});
+
+// Add padding to each column
+auto leftPadded = Padding(leftColumn, 20);
+auto rightPadded = Padding(rightColumn, 20);
+
+auto mainLayout = Row({
+    leftPadded,
+    SizedBox(30, 0),
+    rightPadded
+});
+```
+
+## Best Practices
+
+### Use Consistent Padding
+
+Maintain consistent padding throughout your UI:
+
+```cpp
+const int STANDARD_PADDING = 20;
+
+auto padded1 = Padding(widget1, STANDARD_PADDING);
+auto padded2 = Padding(widget2, STANDARD_PADDING);
+```
+
+### Combine with Other Layout Widgets
+
+Padding works well with Row, Column, and Center:
+
+```cpp
+auto content = Column({widget1, widget2});
+auto paddedContent = Padding(content, 20);
+auto centered = Center(paddedContent);
+```
+
+### Use SizedBox for Spacing Between Widgets
+
+Use Padding for outer spacing, SizedBox for inner spacing:
+
+```cpp
+auto column = Column({
+    widget1,
+    SizedBox(0, 10),  // Space between widgets
+    widget2
+});
+
+auto padded = Padding(column, 20);  // Outer padding
+```
+
+## See Also
+
+- [SizedBox](/widgets/sized-box) - Fixed-size spacing between widgets
+- [Row & Column](/widgets/row-column) - Arrange widgets with spacing
+- [Center](/widgets/center) - Center widgets

@@ -1,0 +1,323 @@
+---
+title: macOS Platform
+description: macOS support via Cocoa (planned feature)
+icon: apple
+---
+
+<Warning>
+**Planned Feature**: macOS support is implemented but not yet officially released. The renderer code exists and has basic functionality, but has not been thoroughly tested in production.
+</Warning>
+
+Fern includes a macOS renderer implementation using Cocoa (AppKit) for native macOS applications. The implementation is complete but currently marked as a planned feature pending additional testing and refinement.
+
+## Implementation Status
+
+The macOS renderer (`macos_renderer.mm`) provides:
+
+<Check>Cocoa/AppKit window management</Check>
+<Check>Native NSView-based rendering</Check>
+<Check>Mouse and keyboard event handling</Check>
+<Check>Window resize and close events</Check>
+<Check>Objective-C++ integration</Check>
+
+## Prerequisites
+
+When macOS support becomes officially available, you will need:
+
+- macOS 10.14 or later
+- Xcode Command Line Tools
+- CMake 3.10+
+- Cocoa framework (included with macOS)
+
+### Installing Dependencies
+
+```bash
+# Install Xcode Command Line Tools
+xcode-select --install
+
+# Install CMake (via Homebrew)
+brew install cmake
+
+# Install fontconfig and freetype
+brew install fontconfig freetype
+```
+
+## Building for macOS
+
+<Note>
+These build instructions are for testing purposes. Official macOS support will be announced when ready.
+</Note>
+
+### Using CMake
+
+```bash
+mkdir build && cd build
+cmake ..
+cmake --build .
+```
+
+CMake will automatically detect macOS and configure the Cocoa renderer.
+
+### Platform Detection
+
+CMake detects macOS and sets up the build:
+
+```cmake CMakeLists.txt:16-18
+elseif(APPLE)
+    set(PLATFORM_NAME "macOS")
+    add_definitions(-D__APPLE__)
+```
+
+### Objective-C++ Compilation
+
+The macOS renderer uses `.mm` extension for Objective-C++:
+
+```cmake CMakeLists.txt:78-82
+set_source_files_properties(
+    src/cpp/src/platform/macos_renderer.mm
+    PROPERTIES COMPILE_FLAGS "-x objective-c++ -fobjc-arc"
+)
+```
+
+<ParamField path="-x objective-c++" type="flag">
+  Force Objective-C++ compilation mode
+</ParamField>
+
+<ParamField path="-fobjc-arc" type="flag">
+  Enable Automatic Reference Counting for memory management
+</ParamField>
+
+### Framework Linking
+
+```cmake CMakeLists.txt:62-76
+if(APPLE)
+    # macOS requires Cocoa framework
+    find_library(COCOA_FRAMEWORK Cocoa REQUIRED)
+    target_link_libraries(fern PUBLIC ${COCOA_FRAMEWORK})
+    
+    # Find fontconfig and freetype on macOS
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(FONTCONFIG REQUIRED fontconfig)
+    pkg_check_modules(FREETYPE REQUIRED freetype2)
+    
+    target_link_libraries(fern PUBLIC ${FONTCONFIG_LIBRARIES} ${FREETYPE_LIBRARIES})
+    target_include_directories(fern PUBLIC ${FONTCONFIG_INCLUDE_DIRS} ${FREETYPE_INCLUDE_DIRS})
+endif()
+```
+
+## macOS Renderer Architecture
+
+The implementation uses native Cocoa components:
+
+### Custom NSView
+
+A custom view handles pixel buffer rendering:
+
+```objc macos_renderer.mm:8-14
+@interface FernView : NSView {
+    uint32_t* pixelBuffer;
+    int bufferWidth;
+    int bufferHeight;
+}
+- (void)setPixelBuffer:(uint32_t*)buffer width:(int)w height:(int)h;
+@end
+```
+
+### CGImage Rendering
+
+Pixels are rendered using Core Graphics:
+
+```objc macos_renderer.mm:43-52
+CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+CGContextRef bitmapContext = CGBitmapContextCreate(
+    pixelBuffer,
+    bufferWidth,
+    bufferHeight,
+    8,                              // bits per component
+    bufferWidth * 4,                // bytes per row
+    colorSpace,
+    kCGImageAlphaNoneSkipFirst | kCGBitmapByteOrder32Little
+);
+```
+
+### Window Delegate
+
+Event handling via NSWindowDelegate:
+
+```objc macos_renderer.mm:71-94
+@interface FernWindowDelegate : NSObject <NSWindowDelegate> {
+    @public
+    std::function<void()> closeCallback;
+    std::function<void(int, int)> resizeCallback;
+}
+@end
+```
+
+### Key Translation
+
+Translates macOS virtual key codes to Fern's KeyCode enum:
+
+```cpp macos_renderer.mm:118-167
+KeyCode translateCocoaKeyToFernKey(unsigned short keyCode) {
+    switch (keyCode) {
+        case 0x24: return KeyCode::Enter;     // Return
+        case 0x35: return KeyCode::Escape;    // Escape
+        case 0x31: return KeyCode::Space;     // Space
+        case 0x33: return KeyCode::Backspace; // Delete
+        case 0x30: return KeyCode::Tab;       // Tab
+        case 0x7B: return KeyCode::ArrowLeft;
+        case 0x7C: return KeyCode::ArrowRight;
+        case 0x7E: return KeyCode::ArrowUp;
+        case 0x7D: return KeyCode::ArrowDown;
+        // ... (full keyboard mapping)
+    }
+}
+```
+
+## Event Handling
+
+### Event Monitoring
+
+Mouse events use NSEvent monitoring:
+
+```cpp macos_renderer.mm:243-253
+NSEventMask eventMask = NSEventMaskMouseMoved | NSEventMaskLeftMouseDragged;
+eventMonitor_ = [NSEvent addLocalMonitorForEventsMatchingMask:eventMask handler:^NSEvent*(NSEvent* event) {
+    if (mouseCallback_) {
+        NSPoint location = [event locationInWindow];
+        NSRect frame = [view_ bounds];
+        int x = (int)location.x;
+        int y = (int)(frame.size.height - location.y); // Flip Y coordinate
+        mouseCallback_(x, y);
+    }
+    return event;
+}];
+```
+
+### Event Polling
+
+```cpp macos_renderer.mm:324-377
+void pollEvents() override {
+    @autoreleasepool {
+        NSEvent* event;
+        while ((event = [NSApp nextEventMatchingMask:NSEventMaskAny
+                                           untilDate:nil
+                                              inMode:NSDefaultRunLoopMode
+                                             dequeue:YES])) {
+            // Process mouse, keyboard events...
+            [NSApp sendEvent:event];
+        }
+    }
+}
+```
+
+## Factory Function
+
+The platform factory creates the macOS renderer:
+
+```cpp platform_factory.cpp:19-22
+#elif defined(__APPLE__)
+    // Extern function defined in macos_renderer.mm
+    extern std::unique_ptr<PlatformRenderer> createMacOSRenderer();
+    return createMacOSRenderer();
+```
+
+The factory function is implemented in the .mm file:
+
+```cpp macos_renderer.mm:405-408
+std::unique_ptr<PlatformRenderer> createMacOSRenderer() {
+    return std::make_unique<MacOSRenderer>();
+}
+```
+
+## Memory Management
+
+The renderer uses Automatic Reference Counting (ARC) for Cocoa objects:
+
+```cpp macos_renderer.mm:187-237
+void initialize(int width, int height) override {
+    @autoreleasepool {
+        // NSApplication setup
+        [NSApplication sharedApplication];
+        [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
+        
+        // Window creation
+        window_ = [[NSWindow alloc] initWithContentRect:frame
+                                              styleMask:styleMask
+                                                backing:NSBackingStoreBuffered
+                                                  defer:NO];
+        // ... 
+    }
+}
+```
+
+## Platform Name
+
+```cpp macos_renderer.mm:400-402
+std::string getPlatformName() override {
+    return "macOS";
+}
+```
+
+## Testing macOS Support
+
+If you want to test the current macOS implementation:
+
+1. Build the project on macOS using CMake
+2. Run examples to verify basic functionality
+3. Report any issues or bugs you encounter
+
+```bash
+mkdir build && cd build
+cmake ..
+cmake --build .
+./platform_test  # Run test application
+```
+
+## Known Limitations
+
+<Warning>
+The following are known areas that need additional work before official release:
+
+- Limited testing on different macOS versions
+- Text input may need refinement for international keyboards
+- Retina display scaling not yet optimized
+- App bundling and distribution workflow not documented
+</Warning>
+
+## Roadmap
+
+<Steps>
+  <Step title="Testing Phase">
+    Extensive testing on macOS 10.14-14.x across different hardware
+  </Step>
+  <Step title="Retina Support">
+    Optimize for high-DPI Retina displays
+  </Step>
+  <Step title="App Bundling">
+    Document creation of .app bundles for distribution
+  </Step>
+  <Step title="Official Release">
+    Remove "planned" designation and announce macOS support
+  </Step>
+</Steps>
+
+## Contributing
+
+If you'd like to help test or improve macOS support:
+
+1. Test the current implementation on your macOS system
+2. Report issues with detailed system information
+3. Submit pull requests for improvements
+4. Provide feedback on the API and user experience
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Linux Platform" icon="linux" href="/platform/linux">
+    Production-ready Linux support
+  </Card>
+  <Card title="Web/WASM" icon="globe" href="/platform/web-wasm">
+    Run Fern in the browser
+  </Card>
+</CardGroup>

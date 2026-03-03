@@ -1,0 +1,494 @@
+---
+title: Rendering Pipeline
+description: Understanding Fern's rendering system and platform abstraction layer
+---
+
+Fern's rendering pipeline transforms your widget hierarchy and drawing commands into pixels on screen. This guide explores the rendering architecture, from high-level widgets down to platform-specific display.
+
+## Rendering Architecture
+
+The rendering system consists of four layers:
+
+```
+Widgets → Drawing Primitives → Canvas → Platform Layer → Display
+```
+
+Each layer has specific responsibilities and provides abstraction for the layers above.
+
+## Layer 1: Widget Rendering
+
+Widgets are responsible for their own rendering:
+
+```cpp
+class ButtonWidget : public Widget {
+public:
+    void render() override {
+        // Determine colors based on state
+        uint32_t bgColor = isHovered_ ? hoverColor_ : normalColor_;
+        
+        // Draw button background
+        Draw::roundedRect(x_, y_, width_, height_, borderRadius_, bgColor);
+        
+        // Draw button text
+        // Text rendering implementation...
+    }
+};
+```
+
+### Rendering Order
+
+The WidgetManager renders widgets in insertion order (bottom to top):
+
+```cpp
+void WidgetManager::renderAll() {
+    for (auto& widget : widgets_) {
+        widget->render();
+    }
+}
+```
+
+This creates proper visual layering:
+```cpp
+addWidget(background);  // Rendered first (back layer)
+addWidget(content);     // Rendered second (middle layer)
+addWidget(overlay);     // Rendered last (front layer)
+```
+
+## Layer 2: Drawing Primitives
+
+The `Draw` namespace provides primitive rendering functions:
+
+```cpp
+namespace Fern::Draw {
+    void fill(uint32_t color);
+    void rect(int x, int y, int width, int height, uint32_t color);
+    void roundedRect(int x, int y, int width, int height, int radius, uint32_t color);
+    void roundedRectBorder(int x, int y, int width, int height, int radius, 
+                          int borderWidth, uint32_t color);
+    void circle(int cx, int cy, int radius, uint32_t color);
+    void line(int x1, int y1, int x2, int y2, int thickness, uint32_t color);
+}
+```
+
+### Implementation Pattern
+
+Primitives use the global canvas:
+
+```cpp
+void Draw::rect(int x, int y, int width, int height, uint32_t color) {
+    Canvas* canvas = globalCanvas;
+    
+    for (int row = 0; row < height; ++row) {
+        for (int col = 0; col < width; ++col) {
+            canvas->setPixel(x + col, y + row, color);
+        }
+    }
+}
+```
+
+### Optimized Primitives
+
+Performance-critical primitives use direct buffer access:
+
+```cpp
+void Draw::fill(uint32_t color) {
+    Canvas* canvas = globalCanvas;
+    uint32_t* buffer = canvas->getBuffer();
+    int pixelCount = canvas->getWidth() * canvas->getHeight();
+    
+    // Use vectorized operations when possible
+    for (int i = 0; i < pixelCount; ++i) {
+        buffer[i] = color;
+    }
+}
+```
+
+## Layer 3: Canvas System
+
+The Canvas provides pixel-level abstraction:
+
+```cpp
+class Canvas {
+public:
+    Canvas(uint32_t* buffer, int width, int height);
+    
+    void clear(uint32_t color);
+    void setPixel(int x, int y, uint32_t color);
+    uint32_t getPixel(int x, int y) const;
+    
+    uint32_t* getBuffer() const { return buffer_; }
+    int getWidth() const { return width_; }
+    int getHeight() const { return height_; }
+    
+private:
+    uint32_t* buffer_;
+    int width_;
+    int height_;
+};
+```
+
+### Pixel Format
+
+All pixels use 32-bit RGBA format (0xAABBGGRR):
+
+```
+Bit Layout: [31-24: Alpha] [23-16: Blue] [15-8: Green] [7-0: Red]
+
+Example Colors:
+0xFF0000FF = Opaque Red   (A=255, B=0,   G=0,   R=255)
+0xFF00FF00 = Opaque Green (A=255, B=0,   G=255, R=0)
+0xFFFF0000 = Opaque Blue  (A=255, B=255, G=0,   R=0)
+0x80FFFFFF = 50% White    (A=128, B=255, G=255, R=255)
+```
+
+### Bounds Checking
+
+Canvas provides automatic bounds safety:
+
+```cpp
+void Canvas::setPixel(int x, int y, uint32_t color) {
+    if (x >= 0 && x < width_ && y >= 0 && y < height_) {
+        buffer_[y * width_ + x] = color;
+    }
+    // Out-of-bounds writes are silently ignored
+}
+```
+
+### Memory Layout
+
+Pixels are stored in row-major order:
+
+```
+Buffer Layout (4x3 canvas):
+[0,0] [1,0] [2,0] [3,0]  ← Row 0
+[0,1] [1,1] [2,1] [3,1]  ← Row 1
+[0,2] [1,2] [2,2] [3,2]  ← Row 2
+
+Pixel at (x, y) = buffer[y * width + x]
+```
+
+This layout provides:
+- **Cache-friendly**: Sequential access along rows
+- **Simple addressing**: Direct calculation of pixel offset
+- **Standard format**: Compatible with most graphics APIs
+
+## Layer 4: Platform Abstraction
+
+The platform layer handles OS-specific rendering:
+
+### Platform Interface
+
+Each platform implements:
+- Window creation and management
+- Event loop processing
+- Frame presentation (buffer → screen)
+- Input event capture
+
+### Platform Implementations
+
+**Linux (SDL)**:
+```cpp
+// src/cpp/src/platform/linux_renderer.cpp
+class LinuxRenderer {
+public:
+    void initialize(int width, int height);
+    void presentFrame(uint32_t* pixelBuffer);
+    bool processEvents(InputState& outInput);
+    void shutdown();
+    
+private:
+    SDL_Window* window_;
+    SDL_Renderer* renderer_;
+    SDL_Texture* texture_;
+};
+```
+
+**Web (Emscripten)**:
+```cpp
+// src/cpp/src/platform/web_renderer.cpp
+class WebRenderer {
+public:
+    void initialize(int width, int height);
+    void presentFrame(uint32_t* pixelBuffer);
+    
+private:
+    // Uses HTML5 Canvas API
+    void copyToCanvasElement(uint32_t* buffer);
+};
+```
+
+### Platform Factory
+
+Runtime platform selection:
+
+```cpp
+// src/cpp/src/platform/platform_factory.cpp
+class PlatformFactory {
+public:
+    static std::unique_ptr<Renderer> createRenderer() {
+#ifdef __EMSCRIPTEN__
+        return std::make_unique<WebRenderer>();
+#elif defined(__linux__)
+        return std::make_unique<LinuxRenderer>();
+#elif defined(_WIN32)
+        return std::make_unique<WindowsRenderer>();
+#elif defined(__APPLE__)
+        return std::make_unique<MacRenderer>();
+#endif
+    }
+};
+```
+
+## Complete Rendering Flow
+
+A typical frame progresses through all layers:
+
+### 1. Frame Start
+
+Platform layer signals new frame:
+```cpp
+while (running) {
+    // Platform captures events
+    InputState input = platform->captureInput();
+    
+    // Process frame...
+}
+```
+
+### 2. Input Processing
+
+Input is distributed to widgets:
+```cpp
+WidgetManager::getInstance().updateAll(input);
+```
+
+### 3. Canvas Clear
+
+Application typically clears the canvas:
+```cpp
+void draw() {
+    Draw::fill(Colors::Black);  // Clear to black
+    // Render content...
+}
+```
+
+### 4. Widget Rendering
+
+Widgets render in order:
+```cpp
+void draw() {
+    Draw::fill(Colors::Black);
+    WidgetManager::getInstance().renderAll();
+}
+```
+
+Each widget's `render()` calls drawing primitives:
+```cpp
+void ButtonWidget::render() {
+    Draw::roundedRect(x_, y_, width_, height_, 5, Colors::Blue);
+}
+```
+
+### 5. Primitive Execution
+
+Primitives write to canvas:
+```cpp
+void Draw::roundedRect(...) {
+    Canvas* canvas = globalCanvas;
+    // Calculate and set pixels...
+    canvas->setPixel(x, y, color);
+}
+```
+
+### 6. Frame Presentation
+
+Platform displays the pixel buffer:
+```cpp
+platform->presentFrame(globalCanvas->getBuffer());
+```
+
+### Complete Example
+
+```cpp
+#include <fern/fern.hpp>
+
+using namespace Fern;
+
+void draw() {
+    // 1. Clear canvas
+    Draw::fill(Colors::DarkGray);
+    
+    // 2. Render all widgets
+    WidgetManager::getInstance().renderAll();
+}
+
+int main() {
+    // Initialize platform and canvas
+    Fern::initialize(800, 600);
+    
+    // Create widgets
+    auto button = Button(ButtonConfig(300, 250, 200, 100, "Click Me"));
+    button->onClick.connect([]() {
+        std::cout << "Clicked!" << std::endl;
+    });
+    addWidget(button);
+    
+    // Set draw callback
+    Fern::setDrawCallback(draw);
+    
+    // Start render loop (blocks until app closes)
+    Fern::startRenderLoop();
+    
+    return 0;
+}
+```
+
+## Performance Optimization
+
+### Minimize Overdraw
+
+Avoid rendering pixels multiple times:
+
+```cpp
+// Inefficient: Full clear + opaque widgets cover entire screen
+void draw() {
+    Draw::fill(Colors::Black);  // Draws every pixel
+    Draw::rect(0, 0, 800, 600, Colors::White);  // Redraws every pixel
+}
+
+// Efficient: Only draw what's visible
+void draw() {
+    Draw::rect(0, 0, 800, 600, Colors::White);  // Draw background once
+}
+```
+
+### Direct Buffer Access
+
+For performance-critical rendering:
+
+```cpp
+void fastFill(uint32_t color) {
+    uint32_t* buffer = globalCanvas->getBuffer();
+    int pixelCount = globalCanvas->getWidth() * globalCanvas->getHeight();
+    
+    // Compiler can vectorize this
+    for (int i = 0; i < pixelCount; ++i) {
+        buffer[i] = color;
+    }
+}
+```
+
+### Cache-Friendly Rendering
+
+Access pixels in row-major order:
+
+```cpp
+// Good: Row-major access (cache-friendly)
+for (int y = 0; y < height; ++y) {
+    for (int x = 0; x < width; ++x) {
+        canvas->setPixel(x, y, color);
+    }
+}
+
+// Poor: Column-major access (cache-unfriendly)
+for (int x = 0; x < width; ++x) {
+    for (int y = 0; y < height; ++y) {
+        canvas->setPixel(x, y, color);
+    }
+}
+```
+
+### Avoid Redundant Rendering
+
+```cpp
+class SmartWidget : public Widget {
+public:
+    void setValue(int value) {
+        if (value_ != value) {
+            value_ = value;
+            dirty_ = true;
+        }
+    }
+    
+    void render() override {
+        if (dirty_) {
+            // Only render if state changed
+            actualRender();
+            dirty_ = false;
+        }
+    }
+    
+private:
+    int value_ = 0;
+    bool dirty_ = true;
+};
+```
+
+## Platform-Specific Considerations
+
+### Frame Rate Control
+
+**Desktop (SDL)**: V-sync handled by SDL
+```cpp
+SDL_RenderPresent(renderer);  // Blocks until v-sync
+```
+
+**Web**: Uses requestAnimationFrame
+```cpp
+emscripten_set_main_loop(renderFrame, 0, 1);  // Browser controls timing
+```
+
+### Color Format Conversion
+
+Some platforms require format conversion:
+
+```cpp
+void PlatformRenderer::presentFrame(uint32_t* fernBuffer) {
+    // Fern: 0xAABBGGRR
+    // Platform might need: 0xAARRGGBB
+    
+    if (needsConversion) {
+        convertColorFormat(fernBuffer, platformBuffer);
+    }
+    
+    displayBuffer(platformBuffer);
+}
+```
+
+## Debugging Rendering
+
+### Visualize Bounds
+
+```cpp
+void Widget::renderDebugBounds() {
+    // Draw widget outline
+    Draw::rectOutline(x_, y_, width_, height_, 1, Colors::Red);
+}
+```
+
+### Performance Metrics
+
+```cpp
+class RenderProfiler {
+public:
+    void beginFrame() {
+        frameStart_ = std::chrono::high_resolution_clock::now();
+    }
+    
+    void endFrame() {
+        auto frameEnd = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(
+            frameEnd - frameStart_
+        );
+        
+        std::cout << "Frame time: " << duration.count() << "μs" << std::endl;
+    }
+};
+```
+
+## See Also
+
+- [Architecture Overview](/core/architecture) - System design
+- [Widget System](/core/widget-system) - Widget rendering details
+- [Canvas System](/core/canvas-system) - Low-level pixel operations
+- [Cross-Platform Support](/platform/cross-platform) - Platform specifics

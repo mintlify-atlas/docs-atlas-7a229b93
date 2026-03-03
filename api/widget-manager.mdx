@@ -1,0 +1,225 @@
+---
+title: WidgetManager
+description: Centralized widget lifecycle and rendering management
+---
+
+The WidgetManager is responsible for maintaining a collection of widgets, handling their input events, rendering them in the correct order, and managing their lifecycle. It provides centralized widget management with proper Z-order handling and responsive layout support.
+
+## Key Features
+
+- Automatic widget lifecycle management
+- Proper Z-order input handling (top widgets receive input first)
+- Responsive layout support with window resize handling
+- Singleton pattern for global access
+- Memory management with shared_ptr
+
+<Note>
+Widgets are rendered in the order they were added (first added = bottom layer). Input is handled in reverse order (last added = top layer receives input first).
+</Note>
+
+## Static Methods
+
+### getInstance()
+
+```cpp
+static WidgetManager& getInstance()
+```
+
+<ResponseField name="return" type="WidgetManager&">
+  Reference to the singleton instance
+</ResponseField>
+
+## Widget Management
+
+### addWidget()
+
+```cpp
+void addWidget(std::shared_ptr<Widget> widget)
+```
+
+Adds a widget to the collection. The widget will be rendered and can receive input events. Widgets are rendered in the order they are added (first added appears at the bottom).
+
+<ParamField path="widget" type="std::shared_ptr<Widget>" required>
+  Shared pointer to the widget to add
+</ParamField>
+
+```cpp
+auto button = Button(ButtonConfig(0, 0, 100, 30, "Click"));
+WidgetManager::getInstance().addWidget(button);
+```
+
+### removeWidget()
+
+```cpp
+void removeWidget(std::shared_ptr<Widget> widget)
+```
+
+Removes the specified widget from the collection. The widget will no longer be rendered or receive input events.
+
+<ParamField path="widget" type="std::shared_ptr<Widget>" required>
+  Shared pointer to the widget to remove
+</ParamField>
+
+<Note>
+If the widget is not found, this method does nothing.
+</Note>
+
+### clear()
+
+```cpp
+void clear()
+```
+
+Clears the entire widget collection. All widgets will be removed and will no longer be rendered or receive input events.
+
+<Note>
+This is useful for scene transitions or cleanup. The widgets themselves are not destroyed if other references exist.
+</Note>
+
+## Input and Rendering
+
+### updateAll()
+
+```cpp
+void updateAll(const InputState& input)
+```
+
+Processes input events for all widgets in reverse order (Z-order). The last added widget (topmost) receives input first. Once a widget handles the input, no widgets below it will receive the event.
+
+<ParamField path="input" type="const InputState&" required>
+  Current input state containing mouse and keyboard info
+</ParamField>
+
+<Note>
+Call this every frame before rendering to handle user interaction. Input propagation stops at the first widget that handles the event.
+</Note>
+
+### renderAll()
+
+```cpp
+void renderAll()
+```
+
+Renders all widgets in the order they were added (first added = bottom layer). This creates the proper visual layering where newer widgets appear on top.
+
+<Note>
+Call this every frame after updating to draw all widgets. Widgets are responsible for their own rendering logic.
+</Note>
+
+## Responsive Layout
+
+### onWindowResize()
+
+```cpp
+void onWindowResize(int newWidth, int newHeight)
+```
+
+Notifies all widgets that implement ResponsiveWidget interface about window size changes. This allows widgets to adjust their layout and positioning automatically.
+
+<ParamField path="newWidth" type="int" required>
+  New window width in pixels
+</ParamField>
+
+<ParamField path="newHeight" type="int" required>
+  New window height in pixels
+</ParamField>
+
+<Note>
+Only widgets that inherit from ResponsiveWidget will be notified.
+</Note>
+
+### refreshLayout()
+
+```cpp
+void refreshLayout()
+```
+
+Triggers a layout refresh using the current canvas dimensions. This is useful when you need to force a layout update without an actual window resize event.
+
+### getCanvasWidth()
+
+```cpp
+int getCanvasWidth() const
+```
+
+<ResponseField name="return" type="int">
+  Current canvas width in pixels
+</ResponseField>
+
+<Warning>
+Deprecated: Use Fern::getWidth() instead for accurate dimensions.
+</Warning>
+
+### getCanvasHeight()
+
+```cpp
+int getCanvasHeight() const
+```
+
+<ResponseField name="return" type="int">
+  Current canvas height in pixels
+</ResponseField>
+
+<Warning>
+Deprecated: Use Fern::getHeight() instead for accurate dimensions.
+</Warning>
+
+## Helper Functions
+
+### addWidget()
+
+```cpp
+void addWidget(std::shared_ptr<Widget> widget)
+```
+
+Global helper function that adds a widget to the default WidgetManager instance.
+
+<ParamField path="widget" type="std::shared_ptr<Widget>" required>
+  Shared pointer to the widget to add
+</ParamField>
+
+```cpp
+auto button = Button(ButtonConfig(0, 0, 100, 30, "Click"));
+addWidget(button);  // Equivalent to WidgetManager::getInstance().addWidget(button)
+```
+
+### removeWidget()
+
+```cpp
+void removeWidget(std::shared_ptr<Widget> widget)
+```
+
+Global helper function that removes a widget from the default WidgetManager instance.
+
+<ParamField path="widget" type="std::shared_ptr<Widget>" required>
+  Shared pointer to the widget to remove
+</ParamField>
+
+## Example Usage
+
+```cpp
+auto button = Button(ButtonConfig(100, 100, 120, 40, "Click Me"));
+WidgetManager::getInstance().addWidget(button);
+
+// In your main loop:
+WidgetManager::getInstance().updateAll(inputState);
+WidgetManager::getInstance().renderAll();
+
+// Clean up when transitioning scenes:
+WidgetManager::getInstance().clear();
+```
+
+## Z-Order Example
+
+```cpp
+// Background widget (rendered first, receives input last)
+auto background = Container(0, 0, 800, 600, Colors::Gray);
+addWidget(background);
+
+// Button widget (rendered second, receives input first)
+auto button = Button(ButtonConfig(100, 100, 120, 40, "Click"));
+addWidget(button);
+
+// The button will receive input events before the background
+// and will be rendered on top of the background
+```

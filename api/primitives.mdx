@@ -1,0 +1,245 @@
+---
+title: Drawing Primitives
+description: Low-level drawing functions for shapes, lines, and fills
+---
+
+The Draw namespace contains all primitive drawing functions for rendering basic shapes and graphics. These functions provide the foundation for all higher-level UI widgets and graphics operations.
+
+All drawing operations use 32-bit RGBA color values in the format 0xAABBGGRR.
+
+## Functions
+
+### fill()
+
+```cpp
+void Draw::fill(uint32_t color)
+```
+
+Fills the entire canvas with a solid color.
+
+<ParamField path="color" type="uint32_t" required>
+  32-bit RGBA color value (0xAABBGGRR format)
+</ParamField>
+
+```cpp
+Draw::fill(Colors::Black);        // Fill with black
+Draw::fill(0xFF0000FF);          // Fill with red
+Draw::fill(0x80FFFFFF);          // Fill with semi-transparent white
+```
+
+### rect()
+
+```cpp
+void Draw::rect(int x, int y, int width, int height, uint32_t color)
+```
+
+Draws a filled rectangle.
+
+<ParamField path="x" type="int" required>
+  Left edge x-coordinate
+</ParamField>
+
+<ParamField path="y" type="int" required>
+  Top edge y-coordinate
+</ParamField>
+
+<ParamField path="width" type="int" required>
+  Rectangle width in pixels
+</ParamField>
+
+<ParamField path="height" type="int" required>
+  Rectangle height in pixels
+</ParamField>
+
+<ParamField path="color" type="uint32_t" required>
+  32-bit RGBA color value
+</ParamField>
+
+```cpp
+Draw::rect(100, 50, 200, 100, Colors::Blue);
+```
+
+### roundedRect()
+
+```cpp
+void Draw::roundedRect(int x, int y, int width, int height, int radius, uint32_t color)
+```
+
+Draws a filled rounded rectangle.
+
+<ParamField path="x" type="int" required>
+  Left edge x-coordinate
+</ParamField>
+
+<ParamField path="y" type="int" required>
+  Top edge y-coordinate
+</ParamField>
+
+<ParamField path="width" type="int" required>
+  Rectangle width in pixels
+</ParamField>
+
+<ParamField path="height" type="int" required>
+  Rectangle height in pixels
+</ParamField>
+
+<ParamField path="radius" type="int" required>
+  Corner radius in pixels
+</ParamField>
+
+<ParamField path="color" type="uint32_t" required>
+  32-bit RGBA color value
+</ParamField>
+
+```cpp
+Draw::roundedRect(50, 50, 150, 75, 10, Colors::Green);
+```
+
+### roundedRectBorder()
+
+```cpp
+void Draw::roundedRectBorder(int x, int y, int width, int height, int radius, int borderWidth, uint32_t color)
+```
+
+Draws a rounded rectangle border/outline.
+
+<ParamField path="x" type="int" required>
+  Left edge x-coordinate
+</ParamField>
+
+<ParamField path="y" type="int" required>
+  Top edge y-coordinate
+</ParamField>
+
+<ParamField path="width" type="int" required>
+  Rectangle width in pixels
+</ParamField>
+
+<ParamField path="height" type="int" required>
+  Rectangle height in pixels
+</ParamField>
+
+<ParamField path="radius" type="int" required>
+  Corner radius in pixels
+</ParamField>
+
+<ParamField path="borderWidth" type="int" required>
+  Border thickness in pixels
+</ParamField>
+
+<ParamField path="color" type="uint32_t" required>
+  32-bit RGBA color value
+</ParamField>
+
+```cpp
+Draw::roundedRectBorder(10, 10, 100, 50, 5, 2, Colors::White);
+```
+
+### circle()
+
+```cpp
+void Draw::circle(int cx, int cy, int radius, uint32_t color)
+```
+
+Draws a filled circle.
+
+<ParamField path="cx" type="int" required>
+  Center x-coordinate
+</ParamField>
+
+<ParamField path="cy" type="int" required>
+  Center y-coordinate
+</ParamField>
+
+<ParamField path="radius" type="int" required>
+  Circle radius in pixels
+</ParamField>
+
+<ParamField path="color" type="uint32_t" required>
+  32-bit RGBA color value
+</ParamField>
+
+```cpp
+Draw::circle(200, 150, 25, Colors::Red);
+```
+
+### line()
+
+```cpp
+void Draw::line(int x1, int y1, int x2, int y2, int thickness, uint32_t color)
+```
+
+Draws a line between two points.
+
+<ParamField path="x1" type="int" required>
+  Start point x-coordinate
+</ParamField>
+
+<ParamField path="y1" type="int" required>
+  Start point y-coordinate
+</ParamField>
+
+<ParamField path="x2" type="int" required>
+  End point x-coordinate
+</ParamField>
+
+<ParamField path="y2" type="int" required>
+  End point y-coordinate
+</ParamField>
+
+<ParamField path="thickness" type="int" required>
+  Line thickness in pixels
+</ParamField>
+
+<ParamField path="color" type="uint32_t" required>
+  32-bit RGBA color value
+</ParamField>
+
+```cpp
+Draw::line(0, 0, 100, 100, 3, Colors::Yellow);
+```
+
+## Example Usage
+
+### Basic Shapes
+
+```cpp
+// Clear background
+Draw::fill(Colors::Black);
+
+// Draw a red rectangle
+Draw::rect(50, 50, 200, 100, Colors::Red);
+
+// Draw a blue circle
+Draw::circle(150, 100, 30, Colors::Blue);
+
+// Draw a yellow line
+Draw::line(0, 0, 300, 300, 2, Colors::Yellow);
+```
+
+### Rounded UI Elements
+
+```cpp
+// Draw a button background
+Draw::roundedRect(100, 50, 120, 40, 8, Colors::Primary);
+
+// Draw a button border
+Draw::roundedRectBorder(100, 50, 120, 40, 8, 2, Colors::White);
+```
+
+### Custom Widget Drawing
+
+```cpp
+class MyWidget : public Widget {
+    void render() override {
+        // Draw widget background
+        Draw::roundedRect(x_, y_, width_, height_, 10, backgroundColor_);
+        
+        // Draw widget border
+        Draw::roundedRectBorder(x_, y_, width_, height_, 10, 2, borderColor_);
+        
+        // Draw content
+        Draw::circle(x_ + width_/2, y_ + height_/2, 15, Colors::White);
+    }
+};
+```

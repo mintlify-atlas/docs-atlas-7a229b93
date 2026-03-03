@@ -1,0 +1,323 @@
+---
+title: Font
+description: Text rendering with bitmap and TTF font support
+---
+
+The Font class provides a unified interface for rendering text using both bitmap fonts and TrueType fonts (TTF). It handles font loading, rendering, and text metrics calculation.
+
+## Font Types
+
+```cpp
+enum class FontType {
+    Bitmap,  // Built-in bitmap font
+    TTF      // TrueType font
+};
+```
+
+## Static Methods
+
+### TTF Font Management
+
+#### loadTTFFont()
+
+```cpp
+static bool loadTTFFont(const std::string& name, const std::string& fontPath)
+```
+
+Loads a TrueType font from a file and registers it with the given name.
+
+<ParamField path="name" type="const std::string&" required>
+  Name to register the font under
+</ParamField>
+
+<ParamField path="fontPath" type="const std::string&" required>
+  Path to the .ttf font file
+</ParamField>
+
+<ResponseField name="return" type="bool">
+  True if the font was loaded successfully, false otherwise
+</ResponseField>
+
+```cpp
+Font::loadTTFFont("main", "assets/fonts/OpenSans-Regular.ttf");
+```
+
+#### setDefaultTTFFont()
+
+```cpp
+static void setDefaultTTFFont(const std::string& name)
+```
+
+Sets the default TTF font to use when no font name is specified.
+
+<ParamField path="name" type="const std::string&" required>
+  Name of the registered font to use as default
+</ParamField>
+
+```cpp
+Font::setDefaultTTFFont("main");
+```
+
+#### hasTTFFont()
+
+```cpp
+static bool hasTTFFont()
+```
+
+<ResponseField name="return" type="bool">
+  True if at least one TTF font is loaded, false otherwise
+</ResponseField>
+
+### Text Rendering
+
+#### renderText()
+
+```cpp
+static void renderText(Canvas* canvas, const std::string& text, int x, int y, 
+                      int size, uint32_t color, FontType type = FontType::Bitmap)
+```
+
+Unified text rendering method that supports both bitmap and TTF fonts.
+
+<ParamField path="canvas" type="Canvas*" required>
+  Canvas to render text on
+</ParamField>
+
+<ParamField path="text" type="const std::string&" required>
+  Text string to render
+</ParamField>
+
+<ParamField path="x" type="int" required>
+  X-coordinate for text position
+</ParamField>
+
+<ParamField path="y" type="int" required>
+  Y-coordinate for text position
+</ParamField>
+
+<ParamField path="size" type="int" required>
+  Font size (scale for bitmap, point size for TTF)
+</ParamField>
+
+<ParamField path="color" type="uint32_t" required>
+  Text color (32-bit RGBA)
+</ParamField>
+
+<ParamField path="type" type="FontType" default="FontType::Bitmap">
+  Font type to use (Bitmap or TTF)
+</ParamField>
+
+```cpp
+Font::renderText(canvas, "Hello World", 100, 50, 24, Colors::White, FontType::TTF);
+```
+
+#### renderBitmap()
+
+```cpp
+static void renderBitmap(Canvas* canvas, const std::string& text, int x, int y, 
+                        int size, uint32_t color)
+```
+
+Renders text using the built-in bitmap font.
+
+<ParamField path="canvas" type="Canvas*" required>
+  Canvas to render text on
+</ParamField>
+
+<ParamField path="text" type="const std::string&" required>
+  Text string to render
+</ParamField>
+
+<ParamField path="x" type="int" required>
+  X-coordinate for text position
+</ParamField>
+
+<ParamField path="y" type="int" required>
+  Y-coordinate for text position
+</ParamField>
+
+<ParamField path="size" type="int" required>
+  Font scale factor
+</ParamField>
+
+<ParamField path="color" type="uint32_t" required>
+  Text color (32-bit RGBA)
+</ParamField>
+
+```cpp
+Font::renderBitmap(canvas, "Bitmap Text", 50, 50, 2, Colors::White);
+```
+
+#### renderTTF()
+
+```cpp
+static void renderTTF(Canvas* canvas, const std::string& text, int x, int y, 
+                     int size, uint32_t color, const std::string& fontName = "")
+```
+
+Renders text using a TrueType font.
+
+<ParamField path="canvas" type="Canvas*" required>
+  Canvas to render text on
+</ParamField>
+
+<ParamField path="text" type="const std::string&" required>
+  Text string to render
+</ParamField>
+
+<ParamField path="x" type="int" required>
+  X-coordinate for text position
+</ParamField>
+
+<ParamField path="y" type="int" required>
+  Y-coordinate for text position
+</ParamField>
+
+<ParamField path="size" type="int" required>
+  Font size in points
+</ParamField>
+
+<ParamField path="color" type="uint32_t" required>
+  Text color (32-bit RGBA)
+</ParamField>
+
+<ParamField path="fontName" type="const std::string&" default="">
+  Name of the font to use (empty string uses default)
+</ParamField>
+
+```cpp
+Font::renderTTF(canvas, "TTF Text", 100, 100, 24, Colors::White, "main");
+```
+
+### Text Metrics
+
+#### getTextWidth()
+
+```cpp
+static int getTextWidth(const std::string& text, int size, FontType type = FontType::Bitmap)
+```
+
+Calculates the width of a text string in pixels.
+
+<ParamField path="text" type="const std::string&" required>
+  Text string to measure
+</ParamField>
+
+<ParamField path="size" type="int" required>
+  Font size
+</ParamField>
+
+<ParamField path="type" type="FontType" default="FontType::Bitmap">
+  Font type to use
+</ParamField>
+
+<ResponseField name="return" type="int">
+  Text width in pixels
+</ResponseField>
+
+```cpp
+int width = Font::getTextWidth("Hello", 24, FontType::TTF);
+```
+
+#### getTextHeight()
+
+```cpp
+static int getTextHeight(int size, FontType type = FontType::Bitmap)
+```
+
+Calculates the height of text at the given size.
+
+<ParamField path="size" type="int" required>
+  Font size
+</ParamField>
+
+<ParamField path="type" type="FontType" default="FontType::Bitmap">
+  Font type to use
+</ParamField>
+
+<ResponseField name="return" type="int">
+  Text height in pixels
+</ResponseField>
+
+```cpp
+int height = Font::getTextHeight(24, FontType::TTF);
+```
+
+## TTF Namespace Helpers
+
+The TTF namespace provides convenient helper functions for working with TrueType fonts.
+
+### TTF::load()
+
+```cpp
+bool TTF::load(const std::string& name, const std::string& path)
+```
+
+Loads a TTF font (equivalent to Font::loadTTFFont).
+
+### TTF::setDefault()
+
+```cpp
+void TTF::setDefault(const std::string& name)
+```
+
+Sets the default TTF font (equivalent to Font::setDefaultTTFFont).
+
+### TTF::render()
+
+```cpp
+void TTF::render(Canvas* canvas, const std::string& text, int x, int y, 
+                int size, uint32_t color, const std::string& fontName = "")
+```
+
+Renders TTF text (equivalent to Font::renderTTF).
+
+### TTF::textWidth()
+
+```cpp
+int TTF::textWidth(const std::string& text, int size, const std::string& fontName = "")
+```
+
+Calculates TTF text width.
+
+### TTF::textHeight()
+
+```cpp
+int TTF::textHeight(int size, const std::string& fontName = "")
+```
+
+Calculates TTF text height.
+
+## Example Usage
+
+### Loading and Using TTF Fonts
+
+```cpp
+// Load fonts
+Font::loadTTFFont("main", "assets/fonts/OpenSans-Regular.ttf");
+Font::loadTTFFont("bold", "assets/fonts/OpenSans-Bold.ttf");
+Font::setDefaultTTFFont("main");
+
+// Render with default font
+Font::renderTTF(canvas, "Hello World", 100, 50, 24, Colors::White);
+
+// Render with specific font
+Font::renderTTF(canvas, "Bold Text", 100, 100, 32, Colors::Red, "bold");
+```
+
+### Using TTF Helpers
+
+```cpp
+TTF::load("main", "assets/fonts/OpenSans-Regular.ttf");
+TTF::setDefault("main");
+TTF::render(canvas, "Easy TTF", 50, 50, 20, Colors::White);
+```
+
+### Centered Text
+
+```cpp
+std::string text = "Centered Text";
+int textWidth = Font::getTextWidth(text, 24, FontType::TTF);
+int x = (canvasWidth - textWidth) / 2;
+Font::renderTTF(canvas, text, x, 100, 24, Colors::White);
+```

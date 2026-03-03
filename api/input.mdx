@@ -1,0 +1,178 @@
+---
+title: Input
+description: Input management system for mouse and keyboard events
+---
+
+The Input class provides a centralized system for managing mouse and keyboard input events. It maintains a global InputState that can be accessed by widgets and other components for input handling.
+
+The Input class is typically used by platform-specific event handlers to update the input state, while widgets access the state for input processing.
+
+## Static Methods
+
+### getState()
+
+```cpp
+static InputState& getState()
+```
+
+Returns a reference to the current global input state containing all mouse and keyboard information for this frame.
+
+<ResponseField name="return" type="InputState&">
+  Reference to the current input state
+</ResponseField>
+
+```cpp
+const InputState& input = Input::getState();
+if (input.mouseClicked) {
+    handleMouseClick(input.mouseX, input.mouseY);
+}
+```
+
+### resetEvents()
+
+```cpp
+static void resetEvents()
+```
+
+Clears events that should only last one frame (like clicks and key presses). This should be called at the beginning of each frame by the main loop.
+
+<Note>
+This preserves continuous states like mouse position and held keys.
+</Note>
+
+## Mouse Input Methods
+
+### updateMousePosition()
+
+```cpp
+static void updateMousePosition(int x, int y)
+```
+
+Updates the global mouse coordinates. This should be called from platform-specific mouse move event handlers.
+
+<ParamField path="x" type="int" required>
+  New mouse X coordinate
+</ParamField>
+
+<ParamField path="y" type="int" required>
+  New mouse Y coordinate
+</ParamField>
+
+### updateMouseButton()
+
+```cpp
+static void updateMouseButton(bool down)
+```
+
+Updates the mouse button press/release state. This should be called from platform-specific mouse button event handlers.
+
+<ParamField path="down" type="bool" required>
+  True if button is pressed, false if released
+</ParamField>
+
+<Note>
+This automatically sets the mouseClicked flag for press events.
+</Note>
+
+## Keyboard Input Methods
+
+### updateKeyPress()
+
+```cpp
+static void updateKeyPress(KeyCode key)
+```
+
+Records a key press event. This should be called from platform-specific key press event handlers.
+
+<ParamField path="key" type="KeyCode" required>
+  The key that was pressed
+</ParamField>
+
+<Note>
+This automatically updates the keyPressed flag and lastKeyPressed.
+</Note>
+
+### updateKeyRelease()
+
+```cpp
+static void updateKeyRelease(KeyCode key)
+```
+
+Records a key release event. This should be called from platform-specific key release event handlers.
+
+<ParamField path="key" type="KeyCode" required>
+  The key that was released
+</ParamField>
+
+<Note>
+This automatically updates the keyReleased flag and lastKeyReleased.
+</Note>
+
+### updateTextInput()
+
+```cpp
+static void updateTextInput(const std::string& text)
+```
+
+Records text input for text fields and typing. This should be called from platform-specific text input event handlers.
+
+<ParamField path="text" type="const std::string&" required>
+  The text that was entered (usually a single character)
+</ParamField>
+
+<Note>
+This is separate from key presses and handles composed characters.
+</Note>
+
+## InputState Structure
+
+The `InputState` struct contains all current input information:
+
+```cpp
+struct InputState {
+    // Mouse input
+    int mouseX = 0;              // Current mouse X position
+    int mouseY = 0;              // Current mouse Y position
+    bool mouseDown = false;      // True if mouse button is currently pressed
+    bool mouseClicked = false;   // True if mouse was clicked this frame
+    
+    // Keyboard input
+    KeyCode lastKeyPressed = KeyCode::None;    // Last key that was pressed
+    KeyCode lastKeyReleased = KeyCode::None;   // Last key that was released
+    bool keyPressed = false;     // True if any key was pressed this frame
+    bool keyReleased = false;    // True if any key was released this frame
+    
+    // Text input
+    std::string textInput = "";  // Text entered this frame
+    bool hasTextInput = false;   // True if text was entered this frame
+    
+    // Methods
+    bool isKeyDown(KeyCode key) const;
+    bool isKeyJustPressed(KeyCode key) const;
+    bool isKeyJustReleased(KeyCode key) const;
+};
+```
+
+## Example Usage
+
+### Platform Integration
+
+```cpp
+// In platform-specific mouse event handler:
+void onMouseMove(int x, int y) {
+    Input::updateMousePosition(x, y);
+}
+
+void onMouseClick(bool down) {
+    Input::updateMouseButton(down);
+}
+
+// In widget input handling:
+bool MyWidget::handleInput(const InputState& input) {
+    if (input.mouseClicked && contains(input.mouseX, input.mouseY)) {
+        onClick();
+        return true;
+    }
+    return false;
+}
+```

@@ -1,0 +1,494 @@
+---
+title: Event System
+description: Understanding Fern's signal-slot architecture for event-driven programming
+---
+
+Fern's event system uses the signal-slot pattern to enable decoupled, type-safe communication between components. This architecture allows widgets to emit events and application code to respond without tight coupling.
+
+## Signal-Slot Pattern
+
+The signal-slot pattern consists of:
+
+- **Signal**: An object that emits events with optional data
+- **Slot**: A callback function (typically a lambda) that responds to the signal
+- **Connection**: The link between a signal and slot
+
+### Basic Architecture
+
+```cpp
+template <typename... Args>
+class Signal {
+public:
+    using ConnectionID = size_t;
+    using SlotFunction = std::function<void(Args...)>;
+    
+    ConnectionID connect(SlotFunction slot);
+    void emit(Args... args) const;
+    void disconnect(ConnectionID id);
+    
+private:
+    std::vector<std::pair<ConnectionID, SlotFunction>> slots_;
+    ConnectionID nextID_ = 0;
+};
+```
+
+## Implementation Details
+
+### Signal Class Template
+
+The `Signal` template is type-safe and supports arbitrary argument types:
+
+```cpp
+// Signal with no parameters
+Signal<> buttonClicked;
+
+// Signal with single parameter
+Signal<int> valueChanged;
+
+// Signal with multiple parameters
+Signal<int, int> mouseMoved;
+Signal<std::string, float> customEvent;
+```
+
+### Connection Management
+
+**Connecting a Slot**:
+```cpp
+ConnectionID connect(SlotFunction slot) {
+    ConnectionID id = nextID_++;
+    slots_.push_back({id, slot});
+    return id;
+}
+```
+
+**Emitting a Signal**:
+```cpp
+void emit(Args... args) const {
+    for (const auto& slot : slots_) {
+        slot.second(args...);  // Call each connected function
+    }
+}
+```
+
+**Disconnecting a Slot**:
+```cpp
+void disconnect(ConnectionID id) {
+    slots_.erase(
+        std::remove_if(slots_.begin(), slots_.end(),
+            [id](const auto& pair) { return pair.first == id; }),
+        slots_.end()
+    );
+}
+```
+
+## Usage Patterns
+
+### Simple Event Handling
+
+```cpp
+auto button = Button(ButtonConfig(100, 100, 120, 40, "Click Me"));
+
+button->onClick.connect([]() {
+    std::cout << "Button was clicked!" << std::endl;
+});
+
+addWidget(button);
+```
+
+### Parameterized Events
+
+```cpp
+auto slider = Slider(SliderConfig(50, 50, 200, 30, 0.0f, 1.0f));
+
+slider->onValueChanged.connect([](float value) {
+    std::cout << "Slider value: " << value << std::endl;
+});
+
+addWidget(slider);
+```
+
+### Capturing State
+
+```cpp
+static int clickCount = 0;
+static std::shared_ptr<TextWidget> counterDisplay;
+
+void setupUI() {
+    counterDisplay = Text(Point(10, 10), "Clicks: 0", 2, Colors::White);
+    
+    auto button = Button(ButtonConfig(10, 50, 120, 40, "Click"));
+    button->onClick.connect([]() {
+        clickCount++;
+        counterDisplay->setText("Clicks: " + std::to_string(clickCount));
+    });
+    
+    addWidget(counterDisplay);
+    addWidget(button);
+}
+```
+
+### Widget Communication
+
+```cpp
+void createLinkedWidgets() {
+    auto input = TextInput(Point(10, 10), Size(200, 30));
+    auto display = Text(Point(10, 50), "Type something...", 2, Colors::White);
+    
+    input->onTextChanged.connect([display](const std::string& text) {
+        display->setText(text.empty() ? "Type something..." : text);
+    });
+    
+    addWidget(input);
+    addWidget(display);
+}
+```
+
+## Common Widget Signals
+
+### Button Signals
+
+```cpp
+class ButtonWidget : public Widget {
+public:
+    Signal<> onClick;         // Emitted on click
+    Signal<> onPress;         // Emitted on mouse down
+    Signal<> onRelease;       // Emitted on mouse up
+    Signal<bool> onHoverChange;  // Emitted when hover state changes
+};
+```
+
+### Input Widget Signals
+
+```cpp
+class TextInputWidget : public Widget {
+public:
+    Signal<const std::string&> onTextChanged;  // Text modified
+    Signal<> onEnterPressed;                   // Enter key pressed
+    Signal<> onFocusGained;                    // Input focused
+    Signal<> onFocusLost;                      // Input unfocused
+};
+```
+
+### Slider Signals
+
+```cpp
+class SliderWidget : public Widget {
+public:
+    Signal<float> onValueChanged;  // Value changed
+    Signal<> onDragStart;          // Drag started
+    Signal<> onDragEnd;            // Drag ended
+};
+```
+
+### Radio Button Signals
+
+```cpp
+class RadioButtonWidget : public Widget {
+public:
+    Signal<> onSelected;           // This button selected
+    Signal<> onDeselected;         // This button deselected
+};
+```
+
+### Dropdown Signals
+
+```cpp
+class DropdownWidget : public Widget {
+public:
+    Signal<int> onSelectionChanged;           // Selected index changed
+    Signal<const std::string&> onItemSelected; // Item selected
+    Signal<bool> onOpenStateChanged;          // Dropdown opened/closed
+};
+```
+
+## Advanced Patterns
+
+### Multiple Connections
+
+Multiple slots can connect to the same signal:
+
+```cpp
+auto button = Button(ButtonConfig(100, 100, 120, 40, "Multi"));
+
+// First handler
+button->onClick.connect([]() {
+    std::cout << "Handler 1" << std::endl;
+});
+
+// Second handler
+button->onClick.connect([]() {
+    std::cout << "Handler 2" << std::endl;
+});
+
+// Both handlers execute when clicked
+addWidget(button);
+```
+
+### Connection Lifetime Management
+
+Store connection IDs for later disconnection:
+
+```cpp
+class Application {
+public:
+    void setupUI() {
+        auto button = Button(ButtonConfig(0, 0, 100, 30, "Click"));
+        
+        // Store connection ID
+        buttonClickConnection_ = button->onClick.connect([this]() {
+            handleButtonClick();
+        });
+        
+        button_ = button;
+        addWidget(button);
+    }
+    
+    void cleanup() {
+        // Disconnect specific handler
+        button_->onClick.disconnect(buttonClickConnection_);
+    }
+    
+private:
+    std::shared_ptr<ButtonWidget> button_;
+    Signal<>::ConnectionID buttonClickConnection_;
+    
+    void handleButtonClick() {
+        // Handle click...
+    }
+};
+```
+
+### Event Chaining
+
+```cpp
+void createEventChain() {
+    auto button1 = Button(ButtonConfig(10, 10, 100, 30, "Start"));
+    auto button2 = Button(ButtonConfig(120, 10, 100, 30, "Next"));
+    auto button3 = Button(ButtonConfig(230, 10, 100, 30, "End"));
+    
+    // Chain events
+    button1->onClick.connect([button2]() {
+        std::cout << "Step 1 complete" << std::endl;
+        // Simulate click on button2
+        button2->onClick.emit();
+    });
+    
+    button2->onClick.connect([button3]() {
+        std::cout << "Step 2 complete" << std::endl;
+        // Simulate click on button3
+        button3->onClick.emit();
+    });
+    
+    button3->onClick.connect([]() {
+        std::cout << "All steps complete!" << std::endl;
+    });
+    
+    addWidget(button1);
+    addWidget(button2);
+    addWidget(button3);
+}
+```
+
+### Conditional Event Handling
+
+```cpp
+void createConditionalHandler() {
+    static bool enabled = true;
+    
+    auto button = Button(ButtonConfig(10, 10, 120, 40, "Action"));
+    auto toggle = Button(ButtonConfig(140, 10, 120, 40, "Toggle"));
+    
+    button->onClick.connect([&]() {
+        if (enabled) {
+            std::cout << "Action executed" << std::endl;
+        } else {
+            std::cout << "Action disabled" << std::endl;
+        }
+    });
+    
+    toggle->onClick.connect([&]() {
+        enabled = !enabled;
+        std::cout << "Action " << (enabled ? "enabled" : "disabled") << std::endl;
+    });
+    
+    addWidget(button);
+    addWidget(toggle);
+}
+```
+
+## Signal Implementation in Widgets
+
+### Emitting Signals
+
+Widgets emit signals in their `handleInput()` method:
+
+```cpp
+class ButtonWidget : public Widget {
+public:
+    Signal<> onClick;
+    
+    bool handleInput(const InputState& input) override {
+        bool wasHovered = isHovered_;
+        isHovered_ = isPointInside(input.mouseX, input.mouseY);
+        
+        // Emit hover change signal
+        if (wasHovered != isHovered_) {
+            onHoverChange.emit(isHovered_);
+        }
+        
+        // Emit click signal
+        if (isHovered_ && input.mouseClicked) {
+            onClick.emit();
+            return true;
+        }
+        
+        return false;
+    }
+    
+private:
+    Signal<bool> onHoverChange;
+    bool isHovered_ = false;
+};
+```
+
+### Custom Widget Signals
+
+```cpp
+class CustomWidget : public Widget {
+public:
+    Signal<int, int> onPositionChanged;
+    Signal<float> onScaleChanged;
+    
+    void setPosition(int x, int y) override {
+        if (x != x_ || y != y_) {
+            Widget::setPosition(x, y);
+            onPositionChanged.emit(x, y);
+        }
+    }
+    
+    void setScale(float scale) {
+        if (scale != scale_) {
+            scale_ = scale;
+            onScaleChanged.emit(scale);
+        }
+    }
+    
+private:
+    float scale_ = 1.0f;
+};
+```
+
+## Performance Considerations
+
+### Signal Emission Cost
+
+- Emission is **O(n)** where n = number of connected slots
+- Each slot function is called sequentially
+- No overhead if no slots are connected
+
+### Connection/Disconnection Cost
+
+- Connection: **O(1)** - append to vector
+- Disconnection: **O(n)** - search and remove from vector
+- Use sparingly in performance-critical paths
+
+### Memory Usage
+
+- Each signal: ~32 bytes base + (16 bytes × number of connections)
+- Each connection: ~16 bytes (ID + function pointer)
+
+## Thread Safety
+
+<Warning>
+The Signal implementation is **not thread-safe**. All signal operations (connect, emit, disconnect) must occur on the main thread.
+</Warning>
+
+For thread-safe alternatives:
+
+```cpp
+// Thread-safe signal (requires mutex)
+template <typename... Args>
+class ThreadSafeSignal {
+public:
+    ConnectionID connect(SlotFunction slot) {
+        std::lock_guard<std::mutex> lock(mutex_);
+        // Connect implementation...
+    }
+    
+    void emit(Args... args) const {
+        std::lock_guard<std::mutex> lock(mutex_);
+        // Emit implementation...
+    }
+    
+private:
+    mutable std::mutex mutex_;
+    // Rest of implementation...
+};
+```
+
+## Best Practices
+
+### Signal Naming Conventions
+
+```cpp
+// Good: Clear event names
+Signal<> onClick;
+Signal<> onValueChanged;
+Signal<int, int> onPositionChanged;
+
+// Avoid: Vague names
+Signal<> signal1;
+Signal<> event;
+```
+
+### Capture Safety
+
+```cpp
+// Good: Capture by value for simple types
+int threshold = 100;
+widget->onValueChanged.connect([threshold](int value) {
+    if (value > threshold) { /* ... */ }
+});
+
+// Good: Use shared_ptr for widget references
+auto display = Text(Point(0, 0), "Text", 2, Colors::White);
+button->onClick.connect([display]() {
+    display->setText("Clicked");
+});
+
+// Dangerous: Capturing raw pointers or references
+MyClass* obj = new MyClass();
+button->onClick.connect([obj]() {  // obj might be deleted!
+    obj->doSomething();
+});
+```
+
+### Avoid Circular Dependencies
+
+```cpp
+// Dangerous: Can create infinite loops
+widgetA->onChange.connect([widgetB]() {
+    widgetB->setValue(100);  // Triggers widgetB->onChange
+});
+
+widgetB->onChange.connect([widgetA]() {
+    widgetA->setValue(200);  // Triggers widgetA->onChange → infinite loop
+});
+
+// Solution: Use flags to prevent recursion
+static bool updating = false;
+
+widgetA->onChange.connect([widgetB]() {
+    if (!updating) {
+        updating = true;
+        widgetB->setValue(100);
+        updating = false;
+    }
+});
+```
+
+## See Also
+
+- [Widget System](/core/widget-system) - Widget architecture
+- [Input API](/api/input) - Input event processing API
+- [Architecture Overview](/core/architecture) - System design

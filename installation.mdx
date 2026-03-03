@@ -1,0 +1,439 @@
+---
+title: "Installation"
+description: "Install Fern UI Framework on Linux, macOS, or Windows with complete CLI and library setup"
+---
+
+# Installation
+
+Get Fern up and running on your system with the Terra CLI and C++ library. This guide covers installation for Linux, macOS, and Windows.
+
+## Prerequisites
+
+Before installing Fern, ensure you have the following tools:
+
+<Info>
+**Required Dependencies:**
+- C++17 or later compiler (g++, clang++, or MSVC)
+- CMake 3.10+
+- Python 3.x and pip3
+- pkg-config
+- Git
+</Info>
+
+### Platform-Specific Requirements
+
+<Tabs>
+  <Tab title="Linux">
+    **Ubuntu/Debian:**
+    ```bash
+    sudo apt-get update
+    sudo apt-get install build-essential cmake python3 python3-pip pkg-config git
+    sudo apt-get install libx11-dev libfontconfig1-dev libfreetype6-dev
+    ```
+
+    **Fedora/RHEL:**
+    ```bash
+    sudo dnf install gcc-c++ cmake python3 python3-pip pkgconfig git
+    sudo dnf install libX11-devel fontconfig-devel freetype-devel
+    ```
+
+    **Arch Linux:**
+    ```bash
+    sudo pacman -S base-devel cmake python python-pip pkg-config git
+    sudo pacman -S libx11 fontconfig freetype2
+    ```
+  </Tab>
+
+  <Tab title="macOS">
+    Install Xcode Command Line Tools and Homebrew:
+    ```bash
+    xcode-select --install
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    ```
+
+    Install dependencies:
+    ```bash
+    brew install cmake python pkg-config git
+    brew install fontconfig freetype
+    ```
+  </Tab>
+
+  <Tab title="Windows">
+    **Using MSYS2 (Recommended):**
+
+    1. Install [MSYS2](https://www.msys2.org/)
+    2. Open MSYS2 MinGW 64-bit terminal
+    3. Install dependencies:
+    ```bash
+    pacman -S mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake
+    pacman -S mingw-w64-x86_64-python mingw-w64-x86_64-python-pip
+    pacman -S mingw-w64-x86_64-pkg-config git
+    ```
+
+    <Note>
+    Native Windows support is planned. Current installation requires MSYS2 environment.
+    </Note>
+  </Tab>
+</Tabs>
+
+## Quick Install (Recommended)
+
+The easiest way to install Fern is using the automated installation script:
+
+<Steps>
+  <Step title="Clone the repository">
+    ```bash
+    git clone https://github.com/fernkit/fern.git
+    cd fern
+    ```
+  </Step>
+
+  <Step title="Run the install script">
+    ```bash
+    ./install.sh
+    ```
+
+    This script will:
+    - Check all dependencies
+    - Install the Terra CLI to `~/.fern/cli`
+    - Build and install the C++ library to `~/.local`
+    - Install Fern source files for web builds
+    - Set up global templates and configuration
+    - Install the Gleeb LSP server (optional)
+    - Add CLI commands to your PATH
+  </Step>
+
+  <Step title="Restart your terminal">
+    After installation, restart your terminal or run:
+    ```bash
+    source ~/.bashrc  # or ~/.zshrc
+    ```
+  </Step>
+
+  <Step title="Verify installation">
+    Check that Fern is installed correctly:
+    ```bash
+    fern bloom
+    ```
+
+    You should see a health check output confirming your installation.
+  </Step>
+</Steps>
+
+<Success>
+Congratulations! Fern is now installed and ready to use.
+</Success>
+
+## Manual Installation
+
+If you prefer to install components manually or need more control:
+
+### 1. Install the C++ Library
+
+<Steps>
+  <Step title="Configure with CMake">
+    ```bash
+    mkdir build
+    cd build
+    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$HOME/.local ..
+    ```
+  </Step>
+
+  <Step title="Build the library">
+    <CodeGroup>
+    ```bash Linux
+    make -j$(nproc)
+    ```
+
+    ```bash macOS
+    make -j$(sysctl -n hw.ncpu)
+    ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Install">
+    ```bash
+    make install
+    ```
+
+    This installs:
+    - Headers to `~/.local/include/fern/`
+    - Library to `~/.local/lib/libfern.a`
+    - CMake config to `~/.local/lib/cmake/Fern/`
+    - pkg-config file to `~/.local/lib/pkgconfig/fern.pc`
+  </Step>
+</Steps>
+
+### 2. Install Terra CLI
+
+<Steps>
+  <Step title="Create CLI directory">
+    ```bash
+    mkdir -p ~/.fern/cli
+    cp -r cli/* ~/.fern/cli/
+    ```
+  </Step>
+
+  <Step title="Create launcher script">
+    ```bash
+    mkdir -p ~/.local/bin
+    cat > ~/.local/bin/fern << 'EOF'
+    #!/bin/bash
+    CLI_DIR="$HOME/.fern/cli"
+    export ORIGINAL_CWD="$(pwd)"
+    python3 "$CLI_DIR/terra_cli.py" "$@"
+    EOF
+    chmod +x ~/.local/bin/fern
+    ```
+  </Step>
+
+  <Step title="Add to PATH">
+    Add to your `~/.bashrc` or `~/.zshrc`:
+    ```bash
+    export PATH="$HOME/.local/bin:$PATH"
+    ```
+
+    Then reload:
+    ```bash
+    source ~/.bashrc  # or ~/.zshrc
+    ```
+  </Step>
+</Steps>
+
+### 3. Set Up Templates and Configuration
+
+```bash
+mkdir -p ~/.fern/templates
+cp -r cli/templates/* ~/.fern/templates/
+```
+
+Create `~/.fern/config.yaml`:
+```yaml
+version: "0.1.0"
+cpp_library_path: "$HOME/.local"
+templates_path: "$HOME/.fern/templates"
+default_template: "basic"
+build:
+  default_flags: ["-std=c++17", "-O2"]
+  debug_flags: ["-std=c++17", "-g", "-O0"]
+  include_paths: ["$HOME/.local/include"]
+  library_paths: ["$HOME/.local/lib"]
+  libraries: ["fern", "X11", "Xext", "fontconfig", "freetype"]
+```
+
+## Building from Source (Alternative Method)
+
+You can also build Fern projects directly without the CLI using the build script:
+
+<CodeGroup>
+```bash Build for Linux
+./build.sh linux
+```
+
+```bash Build for Web
+./build.sh web
+```
+
+```bash Build specific example
+./build.sh linux counter
+```
+
+```bash Debug build
+./build.sh --debug linux
+```
+
+```bash Clean build
+./build.sh --clean --verbose linux
+```
+</CodeGroup>
+
+### Build Script Options
+
+- **Platforms**: `linux`, `web`, `all`
+- **Flags**:
+  - `-d, --debug`: Build in debug mode
+  - `-c, --clean`: Clean build directory first
+  - `-v, --verbose`: Verbose output
+  - `-h, --help`: Show help
+
+## Web Development Setup
+
+To build Fern apps for the web, install Emscripten:
+
+<Steps>
+  <Step title="Install Emscripten">
+    ```bash
+    git clone https://github.com/emscripten-core/emsdk.git
+    cd emsdk
+    ./emsdk install latest
+    ./emsdk activate latest
+    source ./emsdk_env.sh
+    ```
+  </Step>
+
+  <Step title="Add to shell profile">
+    Add to `~/.bashrc` or `~/.zshrc`:
+    ```bash
+    source "$HOME/emsdk/emsdk_env.sh"
+    ```
+  </Step>
+
+  <Step title="Build for web">
+    ```bash
+    fern fire --web
+    # or
+    ./build.sh web
+    ```
+  </Step>
+
+  <Step title="Serve locally">
+    ```bash
+    cd build/web
+    python3 -m http.server 8000
+    ```
+
+    Open `http://localhost:8000` in your browser.
+  </Step>
+</Steps>
+
+## LSP Server Setup (Optional)
+
+Install the Gleeb LSP server for enhanced editor support:
+
+<Steps>
+  <Step title="Install Node.js 16+">
+    <CodeGroup>
+    ```bash Ubuntu/Debian
+    curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+    sudo apt-get install -y nodejs
+    ```
+
+    ```bash macOS
+    brew install node
+    ```
+
+    ```bash Fedora/RHEL
+    sudo dnf install nodejs npm
+    ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Install Gleeb LSP">
+    If using the install script, this is done automatically. Otherwise:
+    ```bash
+    mkdir -p ~/.fern/gleeb
+    # Clone or copy Gleeb LSP to ~/.fern/gleeb
+    cd ~/.fern/gleeb
+    npm install
+    npm run build
+    ```
+  </Step>
+
+  <Step title="Configure VS Code (optional)">
+    ```bash
+    gleeb-configure-vscode
+    ```
+  </Step>
+</Steps>
+
+## Verify Installation
+
+Run these commands to verify everything is working:
+
+```bash
+# Check Fern CLI
+fern bloom
+
+# List available commands
+fern --help
+
+# Check compiler
+g++ --version
+
+# Check CMake
+cmake --version
+
+# Check pkg-config can find Fern
+pkg-config --cflags --libs fern
+```
+
+## CLI Commands
+
+Once installed, you have access to these commands:
+
+- `fern bloom` - Check system health
+- `fern sprout` - Create new project
+- `fern fire` - Run project (build and execute)
+- `fern prepare` - Build project
+- `fern templates` - Manage templates
+- `fern lsp start` - Start LSP server
+- `fern lsp stop` - Stop LSP server
+- `fern lsp config` - Configure editor
+- `fern lsp status` - Check LSP status
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Command 'fern' not found">
+    Ensure `~/.local/bin` is in your PATH:
+    ```bash
+    echo $PATH | grep -q "$HOME/.local/bin" || echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+    source ~/.bashrc
+    ```
+  </Accordion>
+
+  <Accordion title="X11 libraries not found (Linux)">
+    Install X11 development packages:
+    ```bash
+    # Ubuntu/Debian
+    sudo apt-get install libx11-dev
+    # Fedora/RHEL
+    sudo dnf install libX11-devel
+    # Arch
+    sudo pacman -S libx11
+    ```
+  </Accordion>
+
+  <Accordion title="Fontconfig/Freetype errors">
+    Install font libraries:
+    ```bash
+    # Ubuntu/Debian
+    sudo apt-get install libfontconfig1-dev libfreetype6-dev
+    # Fedora/RHEL
+    sudo dnf install fontconfig-devel freetype-devel
+    # macOS
+    brew install fontconfig freetype
+    ```
+  </Accordion>
+
+  <Accordion title="CMake version too old">
+    Update CMake:
+    ```bash
+    # Using pip
+    pip3 install --upgrade cmake
+    # Or download from cmake.org
+    ```
+  </Accordion>
+
+  <Accordion title="Emscripten not found">
+    Make sure you've activated Emscripten:
+    ```bash
+    source ~/emsdk/emsdk_env.sh
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Quick Start Tutorial" icon="rocket" href="/quickstart">
+    Build your first Fern app in minutes
+  </Card>
+  <Card title="Widget System" icon="grid" href="/widgets/overview">
+    Explore the comprehensive widget library
+  </Card>
+</CardGroup>
+
+<Tip>
+**Pro Tip**: Run `fern bloom` after installation to verify all dependencies and get a health report of your setup.
+</Tip>

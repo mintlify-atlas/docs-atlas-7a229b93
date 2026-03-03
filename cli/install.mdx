@@ -1,0 +1,365 @@
+---
+title: install
+description: Install Fern packages and extensions
+---
+
+The `install` command adds packages and libraries to your Fern project, extending functionality with additional features.
+
+## Usage
+
+```bash
+fern install <package_name>
+```
+
+## Arguments
+
+<ParamField path="package_name" type="string" required>
+  Name of the package to install
+</ParamField>
+
+## Available Packages
+
+### Audio
+
+Audio playback support for Fern applications:
+
+```bash
+fern install audio
+```
+
+<CodeGroup>
+```bash Output
+Installing audio
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Installing audio package...
+Audio package installed at packages/audio/
+
+Package 'audio' installed successfully!
+```
+</CodeGroup>
+
+Provides:
+- Sound effect playback
+- Music streaming
+- Volume control
+- Audio format support
+
+Generated files:
+```
+packages/audio/
+├── audio.hpp         # Header file
+└── audio.cpp         # Implementation
+```
+
+Usage in your code:
+```cpp
+#include <packages/audio/audio.hpp>
+
+using namespace Fern;
+
+int main() {
+    Audio::playSound("assets/click.wav");
+    Audio::playMusic("assets/background.mp3");
+    Audio::setVolume(0.8);
+    return 0;
+}
+```
+
+### Networking
+
+HTTP client support for network requests:
+
+```bash
+fern install networking
+```
+
+Provides:
+- HTTP GET/POST requests
+- Asynchronous callbacks
+- JSON response handling
+- Error handling
+
+Generated files:
+```
+packages/networking/
+└── networking.hpp
+```
+
+Usage:
+```cpp
+#include <packages/networking/networking.hpp>
+
+using namespace Fern;
+
+Http::get("https://api.example.com/data", [](const std::string& response) {
+    std::cout << "Response: " << response << std::endl;
+});
+```
+
+### JSON
+
+JSON parsing and serialization:
+
+```bash
+fern install json
+```
+
+Provides:
+- Parse JSON strings
+- Serialize data to JSON
+- Object/array access
+- Type conversion
+
+Generated files:
+```
+packages/json/
+└── json.hpp
+```
+
+Usage:
+```cpp
+#include <packages/json/json.hpp>
+
+using namespace Fern;
+
+std::string jsonStr = R"({"name": "John", "age": "30"})";
+auto data = Json::parse(jsonStr);
+std::cout << data["name"] << std::endl;
+```
+
+## Package Structure
+
+Installed packages are placed in the `packages/` directory:
+
+```
+my_app/
+├── lib/
+│   └── main.cpp
+├── packages/          # Installed packages
+│   ├── audio/
+│   │   ├── audio.hpp
+│   │   └── audio.cpp
+│   ├── networking/
+│   │   └── networking.hpp
+│   └── json/
+│       └── json.hpp
+└── fern.yaml
+```
+
+## Using Installed Packages
+
+### Include in Your Code
+
+```cpp
+#include <packages/audio/audio.hpp>
+#include <packages/networking/networking.hpp>
+#include <packages/json/json.hpp>
+
+using namespace Fern;
+
+int main() {
+    // Use package features
+    Audio::playSound("click.wav");
+    Http::get("https://api.example.com", callback);
+    auto data = Json::parse(jsonString);
+    
+    return 0;
+}
+```
+
+### Build Configuration
+
+Packages are automatically included during compilation when you run `fern fire` or `fern prepare`.
+
+## Examples
+
+### Complete Audio Example
+
+```bash
+# Install audio package
+fern install audio
+```
+
+```cpp
+// lib/main.cpp
+#include <fern/fern.hpp>
+#include <packages/audio/audio.hpp>
+
+using namespace Fern;
+
+void setup() {
+    Audio::playMusic("assets/background.mp3");
+    Audio::setVolume(0.7);
+}
+
+void onButtonClick() {
+    Audio::playSound("assets/click.wav");
+}
+
+int main() {
+    Fern::initialize();
+    setup();
+    Fern::setDrawCallback(draw);
+    Fern::startRenderLoop();
+    return 0;
+}
+```
+
+### Networking Example
+
+```bash
+# Install networking package
+fern install networking
+```
+
+```cpp
+// lib/main.cpp
+#include <fern/fern.hpp>
+#include <packages/networking/networking.hpp>
+#include <iostream>
+
+using namespace Fern;
+
+void fetchData() {
+    Http::get("https://api.github.com/users/octocat", 
+        [](const std::string& response) {
+            std::cout << "Received: " << response << std::endl;
+        }
+    );
+}
+
+int main() {
+    Fern::initialize();
+    fetchData();
+    Fern::startRenderLoop();
+    return 0;
+}
+```
+
+### JSON Parsing Example
+
+```bash
+# Install json package
+fern install json
+```
+
+```cpp
+// lib/main.cpp
+#include <fern/fern.hpp>
+#include <packages/json/json.hpp>
+#include <iostream>
+
+using namespace Fern;
+
+void parseConfig() {
+    std::string config = R"({
+        "title": "My App",
+        "version": "1.0",
+        "debug": "true"
+    })";
+    
+    auto data = Json::parse(config);
+    std::cout << "Title: " << data["title"] << std::endl;
+    std::cout << "Version: " << data["version"] << std::endl;
+}
+
+int main() {
+    parseConfig();
+    return 0;
+}
+```
+
+## Package Development Status
+
+Current packages are in **preview** status and provide basic functionality:
+
+| Package | Status | Features |
+|---------|--------|----------|
+| audio | Preview | Stub implementation, headers provided |
+| networking | Preview | Interface defined, implementation pending |
+| json | Preview | Basic parsing interface |
+
+<Note>
+  These packages currently provide interfaces and basic implementations. Full functionality is under development. Contributions welcome!
+</Note>
+
+## Common Issues
+
+<AccordionGroup>
+  <Accordion title="Not in a Fern project">
+    ```bash
+    fern install audio
+    # Error: Not in a Fern project directory
+    ```
+    
+    Solution: Navigate to a Fern project directory (containing `fern.yaml`).
+  </Accordion>
+  
+  <Accordion title="Unknown package">
+    ```bash
+    fern install unknown
+    # Error: Unknown package: unknown
+    # Available packages: audio, networking, json
+    ```
+    
+    Solution: Install one of the available packages listed.
+  </Accordion>
+  
+  <Accordion title="Package already installed">
+    Installing a package multiple times overwrites the existing installation with the latest version.
+  </Accordion>
+</AccordionGroup>
+
+## Listing Available Packages
+
+To see all available packages:
+
+```bash
+fern install
+```
+
+```bash
+Error: Package name is required
+Usage: fern install <package_name>
+Example: fern install audio
+
+Available packages:
+  audio      - Audio playback support
+  networking - HTTP client support
+  json       - JSON parsing support
+```
+
+## Future Packages
+
+Planned packages for future releases:
+
+- **physics** - 2D physics engine
+- **ui-components** - Pre-built UI widgets
+- **storage** - Local storage and file I/O
+- **animation** - Animation and tweening library
+- **particles** - Particle system effects
+- **3d** - 3D rendering support
+
+## Custom Packages
+
+You can create custom packages by adding them to `packages/`:
+
+```
+packages/
+└── my_package/
+    ├── my_package.hpp
+    └── my_package.cpp
+```
+
+Then include them:
+
+```cpp
+#include <packages/my_package/my_package.hpp>
+```
+
+## Related Commands
+
+- [`fern sprout`](/cli/sprout) - Create projects to install packages into
+- [`fern fire`](/cli/fire) - Build and test projects with installed packages
+- [`fern templates`](/cli/templates) - Use templates that include pre-installed packages

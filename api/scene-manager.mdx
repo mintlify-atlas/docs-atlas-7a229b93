@@ -1,0 +1,311 @@
+---
+title: SceneManager
+description: Scene navigation and lifecycle management system
+---
+
+The SceneManager provides a powerful system for organizing your application into discrete scenes or screens. It maintains a stack of scenes and handles automatic lifecycle management, navigation, and state preservation.
+
+## Scene Class
+
+The base class for all scenes in your application. A Scene represents a distinct screen or state (e.g., Menu, Game, Settings).
+
+### Constructor
+
+```cpp
+Scene(const std::string& name)
+```
+
+<ParamField path="name" type="const std::string&" required>
+  Unique identifier for this scene
+</ParamField>
+
+### Lifecycle Methods
+
+#### onCreate()
+
+```cpp
+virtual void onCreate()
+```
+
+Called once when the scene is first created. Use this method to initialize data, load resources, or perform one-time setup that doesn't depend on UI widgets.
+
+<Note>
+This is called before onEnter() and only once per scene instance.
+</Note>
+
+#### onEnter()
+
+```cpp
+virtual void onEnter()
+```
+
+Called every time the scene becomes active. Use this method to set up UI widgets, start animations, or perform setup that should happen each time the scene is shown.
+
+<Note>
+This can be called multiple times if the scene is pushed/popped.
+</Note>
+
+#### onExit()
+
+```cpp
+virtual void onExit()
+```
+
+Called when the scene becomes inactive. Use this method to clean up UI widgets, pause animations, or save temporary state. The scene may become active again later.
+
+<Warning>
+Always clean up widgets here to prevent memory leaks.
+</Warning>
+
+#### onDestroy()
+
+```cpp
+virtual void onDestroy()
+```
+
+Called when the scene is permanently removed. Use this method to free resources, save permanent state, or perform final cleanup. The scene will not be used again.
+
+<Note>
+This is called after onExit() and only once per scene instance.
+</Note>
+
+### Update and Render Methods
+
+#### update()
+
+```cpp
+virtual void update(float deltaTime)
+```
+
+Called every frame while the scene is active. Use this method to update game logic, animations, or any time-dependent behavior.
+
+<ParamField path="deltaTime" type="float" required>
+  Time elapsed since the last update in seconds
+</ParamField>
+
+#### render()
+
+```cpp
+virtual void render()
+```
+
+Called every frame to render the scene. Use this method to draw backgrounds, game objects, or custom graphics. Call `Scene::render()` at the end to render all managed widgets.
+
+<Note>
+The default implementation renders all widgets using WidgetManager.
+</Note>
+
+#### getName()
+
+```cpp
+const std::string& getName() const
+```
+
+<ResponseField name="return" type="const std::string&">
+  The scene's unique identifier
+</ResponseField>
+
+## SceneManager Class
+
+Singleton class that manages scene navigation and lifecycle.
+
+### getInstance()
+
+```cpp
+static SceneManager& getInstance()
+```
+
+<ResponseField name="return" type="SceneManager&">
+  Reference to the singleton instance
+</ResponseField>
+
+### Scene Registration
+
+#### registerScene()
+
+```cpp
+void registerScene(const std::string& name, std::function<std::unique_ptr<Scene>()> creator)
+```
+
+Register a factory function that creates instances of a scene.
+
+<ParamField path="name" type="const std::string&" required>
+  Unique name for the scene
+</ParamField>
+
+<ParamField path="creator" type="std::function<std::unique_ptr<Scene>()>" required>
+  Factory function that returns a new scene instance
+</ParamField>
+
+```cpp
+SceneManager::getInstance().registerScene("Menu", []() -> std::unique_ptr<Scene> {
+    return std::make_unique<MenuScene>();
+});
+```
+
+<Tip>
+Use the `REGISTER_SCENE` macro for easier registration.
+</Tip>
+
+### Navigation Methods
+
+#### pushScene()
+
+```cpp
+void pushScene(const std::string& name)
+```
+
+Creates a new instance of the named scene and pushes it onto the stack. The current scene (if any) will call `onExit()` and pause, while the new scene will call `onCreate()` and `onEnter()`.
+
+<ParamField path="name" type="const std::string&" required>
+  Name of the scene to push (must be registered)
+</ParamField>
+
+<Note>
+The current scene remains in memory and can be returned to with popScene().
+</Note>
+
+#### popScene()
+
+```cpp
+void popScene()
+```
+
+Removes the current scene from the stack, calling `onExit()` and `onDestroy()`. If there was a previous scene, it will call `onEnter()` and resume.
+
+<Warning>
+Does nothing if the stack is empty.
+</Warning>
+
+#### replaceScene()
+
+```cpp
+void replaceScene(const std::string& name)
+```
+
+Removes the current scene (calling `onExit()` and `onDestroy()`) and pushes a new scene onto the stack. This is useful for main navigation where you don't want to return to the previous scene.
+
+<ParamField path="name" type="const std::string&" required>
+  Name of the scene to replace with (must be registered)
+</ParamField>
+
+#### clearScenes()
+
+```cpp
+void clearScenes()
+```
+
+Calls `onExit()` and `onDestroy()` on all scenes in the stack, leaving the application with no active scene.
+
+<Warning>
+Use carefully - the application will have no UI after this call.
+</Warning>
+
+### Update and Render
+
+#### update()
+
+```cpp
+void update(float deltaTime)
+```
+
+Calls `update()` on the current scene (if any). This should be called every frame from your main loop.
+
+<ParamField path="deltaTime" type="float" required>
+  Time elapsed since the last update in seconds
+</ParamField>
+
+#### render()
+
+```cpp
+void render()
+```
+
+Calls `render()` on the current scene (if any). This should be called every frame from your draw callback.
+
+### Query Methods
+
+#### getCurrentScene()
+
+```cpp
+Scene* getCurrentScene() const
+```
+
+<ResponseField name="return" type="Scene*">
+  Pointer to the current scene, or nullptr if no scenes are active
+</ResponseField>
+
+#### hasScenes()
+
+```cpp
+bool hasScenes() const
+```
+
+<ResponseField name="return" type="bool">
+  True if there are scenes in the stack, false otherwise
+</ResponseField>
+
+## Helper Macros and Functions
+
+### REGISTER_SCENE
+
+```cpp
+REGISTER_SCENE(name, sceneClass)
+```
+
+Convenience macro for scene registration.
+
+<ParamField path="name" type="string" required>
+  String name for the scene
+</ParamField>
+
+<ParamField path="sceneClass" type="class" required>
+  Class name of the scene (must inherit from Scene)
+</ParamField>
+
+```cpp
+REGISTER_SCENE("Menu", MenuScene);
+REGISTER_SCENE("Game", GameScene);
+REGISTER_SCENE("Settings", SettingsScene);
+```
+
+### Global Functions
+
+```cpp
+void pushScene(const std::string& name);
+void popScene();
+void replaceScene(const std::string& name);
+```
+
+Convenience functions that call the corresponding SceneManager methods.
+
+## Example Usage
+
+```cpp
+class MenuScene : public Scene {
+public:
+    MenuScene() : Scene("MenuScene") {}
+    
+    void onEnter() override {
+        setupUI();
+    }
+    
+    void onExit() override {
+        WidgetManager::getInstance().clearAll();
+    }
+    
+    void render() override {
+        Draw::fill(Colors::DarkBlue);
+        Scene::render(); // Renders all widgets
+    }
+};
+
+// Register scenes
+REGISTER_SCENE("Menu", MenuScene);
+REGISTER_SCENE("Game", GameScene);
+
+// Navigate between scenes
+SceneManager::getInstance().pushScene("Menu");
+SceneManager::getInstance().pushScene("Game");  // Menu pauses
+SceneManager::getInstance().popScene();         // Back to Menu
+```

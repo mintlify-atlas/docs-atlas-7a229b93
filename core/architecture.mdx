@@ -1,0 +1,455 @@
+---
+title: System Architecture
+description: Overview of the Fern UI Framework's layered architecture and core components
+---
+
+Fern is a lightweight, cross-platform UI framework built on a clean, layered architecture that separates concerns while maintaining tight integration where it matters. Understanding this architecture is essential for building robust applications and extending the framework.
+
+## Architectural Layers
+
+Fern's architecture consists of four primary layers, each with distinct responsibilities:
+
+```
+┌─────────────────────────────────────────┐
+│         Application Layer               │
+│   (Your UI code using Fern APIs)       │
+└─────────────────────────────────────────┘
+              ↓
+┌─────────────────────────────────────────┐
+│         Widget Layer                    │
+│   (Buttons, Text, Layouts, etc.)       │
+└─────────────────────────────────────────┘
+              ↓
+┌─────────────────────────────────────────┐
+│         Core Framework Layer            │
+│  (Canvas, WidgetManager, Input, etc.)  │
+└─────────────────────────────────────────┘
+              ↓
+┌─────────────────────────────────────────┐
+│         Platform Layer                  │
+│    (SDL, Web, Native Renderers)        │
+└─────────────────────────────────────────┘
+```
+
+### Platform Layer
+
+The platform layer provides the abstraction between Fern's rendering system and the underlying operating system or environment. This layer handles:
+
+- **Window Creation**: Creating and managing the application window
+- **Event Loop**: Processing system events and converting them to Fern's input format
+- **Frame Presentation**: Displaying the rendered pixel buffer to the screen
+- **Platform-Specific APIs**: Interfacing with SDL, browser APIs, or native window systems
+
+See `src/cpp/src/platform/` for platform-specific implementations like `linux_renderer.cpp` and `web_renderer.cpp`.
+
+### Core Framework Layer
+
+The core layer contains the fundamental systems that all widgets and applications depend on:
+
+#### Canvas System
+
+The Canvas provides low-level pixel manipulation capabilities. Every widget ultimately renders by setting pixels on the canvas.
+
+```cpp
+class Canvas {
+public:
+    Canvas(uint32_t* buffer, int width, int height);
+    void clear(uint32_t color);
+    void setPixel(int x, int y, uint32_t color);
+    uint32_t getPixel(int x, int y) const;
+    uint32_t* getBuffer() const;
+    int getWidth() const;
+    int getHeight() const;
+};
+```
+
+**Key characteristics:**
+- Direct pixel buffer access for maximum performance
+- 32-bit RGBA color format (0xAABBGGRR)
+- Automatic bounds checking on pixel operations
+- Single global canvas instance (`globalCanvas`)
+
+Located in: `src/cpp/include/fern/core/canvas.hpp`
+
+#### Widget Manager
+
+The WidgetManager orchestrates all widget lifecycle, rendering, and input distribution:
+
+```cpp
+class WidgetManager {
+public:
+    static WidgetManager& getInstance();
+    void addWidget(std::shared_ptr<Widget> widget);
+    void removeWidget(std::shared_ptr<Widget> widget);
+    void updateAll(const InputState& input);
+    void renderAll();
+    void clear();
+    void onWindowResize(int newWidth, int newHeight);
+};
+```
+
+**Responsibilities:**
+- Maintains widget collection with proper Z-ordering
+- Distributes input events from top to bottom
+- Renders widgets in correct layering order
+- Handles window resize events for responsive widgets
+- Provides singleton access pattern
+
+Located in: `src/cpp/include/fern/core/widget_manager.hpp`
+
+#### Input System
+
+The input system captures and normalizes user input from various sources:
+
+```cpp
+struct InputState {
+    // Mouse state
+    int mouseX, mouseY;
+    bool mouseDown;
+    bool mouseClicked;
+    
+    // Keyboard state
+    KeyCode lastKeyPressed;
+    KeyCode lastKeyReleased;
+    bool keyPressed;
+    bool keyReleased;
+    
+    // Text input
+    std::string textInput;
+    bool hasTextInput;
+    
+    // Query methods
+    bool isKeyDown(KeyCode key) const;
+    bool isKeyJustPressed(KeyCode key) const;
+    bool isKeyJustReleased(KeyCode key) const;
+};
+```
+
+**Features:**
+- Frame-based input state (per-frame snapshots)
+- Mouse position and button tracking
+- Keyboard state with key code enumeration
+- Text input for text fields
+- Query API for checking key states
+
+Located in: `src/cpp/include/fern/core/types.hpp` and `src/cpp/include/fern/core/input.hpp`
+
+#### Signal/Slot System
+
+The signal/slot system provides type-safe event-driven communication:
+
+```cpp
+template <typename... Args>
+class Signal {
+public:
+    using ConnectionID = size_t;
+    using SlotFunction = std::function<void(Args...)>;
+    
+    ConnectionID connect(SlotFunction slot);
+    void emit(Args... args) const;
+    void disconnect(ConnectionID id);
+};
+```
+
+**Characteristics:**
+- Template-based for type safety
+- Multiple slots per signal
+- Connection ID tracking for disconnection
+- Used extensively in widget event handling
+
+Located in: `src/cpp/include/fern/core/signal.hpp`
+
+### Widget Layer
+
+The widget layer builds on the core framework to provide reusable UI components:
+
+#### Base Widget Interface
+
+All widgets inherit from a common base:
+
+```cpp
+class Widget {
+public:
+    virtual ~Widget() = default;
+    virtual void render() = 0;
+    virtual bool handleInput(const InputState& input) = 0;
+    
+    virtual void setPosition(int x, int y);
+    virtual int getX() const;
+    virtual int getY() const;
+    virtual void resize(int width, int height);
+    virtual int getWidth() const;
+    virtual int getHeight() const;
+    
+protected:
+    int x_, y_, width_, height_;
+};
+```
+
+Located in: `src/cpp/include/fern/ui/widgets/widget.hpp`
+
+#### Widget Categories
+
+**Display Widgets**: Text, Circle, Line
+- Render visual content
+- Minimal or no interactivity
+- Examples: `TextWidget`, `CircleWidget`, `LineWidget`
+
+**Interactive Widgets**: Button, TextInput, Slider, RadioButton, Dropdown
+- Handle user input
+- Emit signals on interaction
+- Maintain internal state
+- Examples: `ButtonWidget`, `TextInputWidget`, `SliderWidget`
+
+**Layout Widgets**: Column, Row, Center, Container
+- Arrange child widgets
+- Implement automatic positioning algorithms
+- Support responsive design
+- Examples: `ColumnWidget`, `RowWidget`, `CenterWidget`
+
+**Indicator Widgets**: ProgressBar, CircularIndicator
+- Show progress or loading states
+- Often animated
+- Examples: `ProgressBarWidget`, `CircularIndicatorWidget`
+
+All widget implementations are in: `src/cpp/include/fern/ui/widgets/`
+
+### Application Layer
+
+Your application code sits at the top layer, using Fern's APIs to build user interfaces:
+
+```cpp
+#include <fern/fern.hpp>
+
+using namespace Fern;
+
+int main() {
+    // Initialize framework
+    Fern::initialize(800, 600);
+    
+    // Create UI
+    auto button = Button(ButtonConfig(0, 0, 120, 40, "Click Me"));
+    button->onClick.connect([]() {
+        std::cout << "Button clicked!" << std::endl;
+    });
+    addWidget(button);
+    
+    // Set up rendering
+    Fern::setDrawCallback([]() {
+        Draw::fill(Colors::DarkGray);
+        WidgetManager::getInstance().renderAll();
+    });
+    
+    // Start event loop
+    Fern::startRenderLoop();
+    return 0;
+}
+```
+
+## Data Flow
+
+### Rendering Pipeline
+
+1. **Frame Start**: Platform layer signals new frame
+2. **Clear Canvas**: Application clears canvas (optional)
+3. **Draw Callback**: User's draw function executes
+4. **Widget Rendering**: `WidgetManager::renderAll()` renders all widgets
+5. **Primitive Drawing**: Widgets use `Draw::` functions
+6. **Canvas Operations**: Primitives set pixels on the canvas
+7. **Frame Present**: Platform layer displays the pixel buffer
+
+```
+Platform Loop → Draw Callback → WidgetManager → Widgets → Draw:: → Canvas → Platform Present
+```
+
+### Input Processing Flow
+
+1. **Event Capture**: Platform layer captures raw events (mouse, keyboard)
+2. **State Construction**: Input system builds `InputState` from events
+3. **Widget Distribution**: `WidgetManager::updateAll()` distributes input
+4. **Z-Order Processing**: Widgets process input from top to bottom
+5. **Event Handling**: First widget to return `true` stops propagation
+6. **Signal Emission**: Widgets emit signals for application logic
+7. **Callback Execution**: Connected slots execute
+
+```
+Platform Events → InputState → WidgetManager → Widgets (Z-order) → Signals → Callbacks
+```
+
+## Memory Management
+
+Fern uses modern C++ memory management patterns:
+
+### Widget Ownership
+
+- Widgets are managed with `std::shared_ptr<Widget>`
+- WidgetManager holds shared pointers
+- Multiple references are safe and encouraged
+- Widgets are destroyed when all references are released
+
+```cpp
+auto button = Button(config);  // Creates shared_ptr
+addWidget(button);             // WidgetManager holds reference
+// button can go out of scope, widget persists in manager
+```
+
+### Canvas Memory
+
+- Canvas uses raw pointer to pixel buffer
+- Buffer ownership depends on initialization method:
+  - Platform-managed: Framework owns buffer
+  - Custom buffer: Application owns buffer
+- Global canvas (`globalCanvas`) is a raw pointer for performance
+
+### Layout Container Memory
+
+- Layout widgets hold `std::shared_ptr` to children
+- Removing from WidgetManager doesn't destroy if layout holds reference
+- This enables complex widget hierarchies
+
+## Thread Safety
+
+<Warning>
+Fern is **not thread-safe** by default. All widget operations, rendering, and input handling must occur on the main thread.
+</Warning>
+
+The rendering loop runs on a single thread:
+- Event processing
+- Input handling
+- Widget updates
+- Rendering
+- Frame presentation
+
+If you need background processing:
+- Perform work on separate threads
+- Use thread-safe queues to communicate with main thread
+- Update UI only from the main thread
+
+## Initialization and Lifecycle
+
+### Framework Initialization
+
+```cpp
+// Option 1: Auto-detect dimensions
+Fern::initialize();
+
+// Option 2: Specify dimensions
+Fern::initialize(800, 600);
+
+// Option 3: Custom pixel buffer
+uint32_t* buffer = new uint32_t[800 * 600];
+Fern::initialize(buffer, 800, 600);
+```
+
+### Setup Phase
+
+```cpp
+// Create widgets
+auto ui = createUserInterface();
+
+// Set callbacks
+Fern::setDrawCallback([]() { /* render */ });
+Fern::setWindowResizeCallback([](int w, int h) { /* handle resize */ });
+```
+
+### Event Loop
+
+```cpp
+// Blocks until application closes
+Fern::startRenderLoop();
+```
+
+### Cleanup
+
+```cpp
+// Clear all widgets (if needed)
+WidgetManager::getInstance().clear();
+
+// Framework handles cleanup automatically on shutdown
+```
+
+## Extension Points
+
+### Custom Widgets
+
+Extend the `Widget` base class:
+
+```cpp
+class MyCustomWidget : public Widget {
+public:
+    void render() override {
+        // Custom rendering using Draw:: or direct Canvas access
+    }
+    
+    bool handleInput(const InputState& input) override {
+        // Custom input handling
+        return false;  // or true if handled
+    }
+};
+```
+
+### Custom Layout Algorithms
+
+Extend `LayoutWidget` for custom arrangements:
+
+```cpp
+class GridLayout : public LayoutWidget {
+protected:
+    void arrangeChildren() override {
+        // Custom grid positioning logic
+    }
+};
+```
+
+### Custom Drawing Primitives
+
+Add functions to the `Draw` namespace or use Canvas directly:
+
+```cpp
+namespace Fern::Draw {
+    void myCustomShape(int x, int y, uint32_t color) {
+        // Use Canvas or other primitives
+        Canvas* canvas = globalCanvas;
+        // Custom drawing...
+    }
+}
+```
+
+## Performance Characteristics
+
+### Rendering Performance
+
+- **Canvas Clear**: O(width × height) - full buffer fill
+- **Widget Rendering**: O(n) where n = number of widgets
+- **Pixel Operations**: O(1) with bounds checking
+- **Direct Buffer Access**: O(1) without bounds checking
+
+### Input Distribution
+
+- **Input Processing**: O(n) where n = number of widgets
+- **Z-Order Traversal**: Reverse iteration, early exit on handle
+- **Signal Emission**: O(m) where m = number of connected slots
+
+### Memory Usage
+
+- **Canvas Buffer**: width × height × 4 bytes (32-bit RGBA)
+- **Per Widget**: ~100-500 bytes depending on type
+- **Layout Overhead**: Additional shared_ptr overhead per child
+
+## Design Principles
+
+Fern's architecture follows these core principles:
+
+1. **Immediate Mode Philosophy**: No retained UI tree, widgets render each frame
+2. **Pixel-Level Control**: Direct canvas access when needed
+3. **Modern C++**: Smart pointers, templates, RAII
+4. **Platform Abstraction**: Write once, run anywhere
+5. **Minimal Dependencies**: Core framework has few external dependencies
+6. **Progressive Enhancement**: Start simple, add complexity as needed
+
+## See Also
+
+- [Widget System](/core/widget-system) - Detailed widget architecture
+- [Layout Engine](/core/layout-engine) - Layout system internals
+- [Rendering Pipeline](/core/rendering) - Rendering and platform abstraction
+- [Event System](/core/event-system) - Signal/slot communication

@@ -1,0 +1,254 @@
+---
+title: LineWidget
+description: Draw lines between two points with configurable thickness
+---
+
+LineWidget provides a simple way to draw straight lines with customizable thickness and color. Useful for creating dividers, borders, connections, or simple graphics.
+
+## Basic Usage
+
+```cpp
+#include <fern/fern.hpp>
+
+using namespace Fern;
+
+auto line = Line(Point(100, 50), Point(200, 150), 2, Colors::White);
+```
+
+## Constructor
+
+<ParamField path="start" type="Point">
+  Starting point of the line (x, y coordinates)
+</ParamField>
+
+<ParamField path="end" type="Point">
+  Ending point of the line (x, y coordinates)
+</ParamField>
+
+<ParamField path="thickness" type="int">
+  Line thickness in pixels
+</ParamField>
+
+<ParamField path="color" type="uint32_t">
+  Line color in ARGB format
+</ParamField>
+
+<ParamField path="addToManager" type="bool" default="true">
+  Whether to automatically add to widget manager
+</ParamField>
+
+## Methods
+
+### Endpoints
+
+```cpp
+void setStart(Point start)
+Point getStart() const
+
+void setEnd(Point end)
+Point getEnd() const
+```
+
+### Appearance
+
+```cpp
+void setThickness(int thickness)
+int getThickness() const
+
+void setColor(uint32_t color)
+uint32_t getColor() const
+```
+
+## Examples
+
+### Basic Lines
+
+```cpp
+auto thinLine = Line(Point(50, 100), Point(250, 100), 1, Colors::White);
+auto mediumLine = Line(Point(50, 120), Point(250, 120), 3, Colors::Green);
+auto thickLine = Line(Point(50, 140), Point(250, 140), 6, Colors::Blue);
+```
+
+### Different Orientations
+
+```cpp
+// Horizontal
+auto horizontal = Line(Point(100, 100), Point(300, 100), 2, Colors::Yellow);
+
+// Vertical
+auto vertical = Line(Point(200, 50), Point(200, 150), 2, Colors::Yellow);
+
+// Diagonal
+auto diagonal = Line(Point(100, 50), Point(300, 150), 2, Colors::Yellow);
+```
+
+### Rectangle with Lines
+
+```cpp
+int x = 50, y = 100, width = 200, height = 100;
+
+auto top = Line(Point(x, y), Point(x + width, y), 3, Colors::Cyan);
+auto right = Line(Point(x + width, y), Point(x + width, y + height), 3, Colors::Cyan);
+auto bottom = Line(Point(x + width, y + height), Point(x, y + height), 3, Colors::Cyan);
+auto left = Line(Point(x, y + height), Point(x, y), 3, Colors::Cyan);
+```
+
+### Triangle with Lines
+
+```cpp
+Point p1(100, 100);
+Point p2(200, 100);
+Point p3(150, 160);
+
+auto side1 = Line(p1, p2, 3, Colors::Magenta);
+auto side2 = Line(p2, p3, 3, Colors::Magenta);
+auto side3 = Line(p3, p1, 3, Colors::Magenta);
+```
+
+### Grid Pattern
+
+```cpp
+int gridX = 50, gridY = 50;
+int gridSize = 40, rows = 4, cols = 5;
+
+// Vertical lines
+for (int col = 0; col <= cols; ++col) {
+    auto line = Line(
+        Point(gridX + col * gridSize, gridY),
+        Point(gridX + col * gridSize, gridY + rows * gridSize),
+        1, Colors::Gray
+    );
+}
+
+// Horizontal lines
+for (int row = 0; row <= rows; ++row) {
+    auto line = Line(
+        Point(gridX, gridY + row * gridSize),
+        Point(gridX + cols * gridSize, gridY + row * gridSize),
+        1, Colors::Gray
+    );
+}
+```
+
+### Progress Bar with Lines
+
+```cpp
+int barX = 100, barY = 200;
+int barWidth = 200, barHeight = 20;
+
+// Background
+auto bgLine = Line(
+    Point(barX, barY),
+    Point(barX + barWidth, barY),
+    barHeight, Colors::DarkGray
+);
+
+// Progress (60%)
+int progressWidth = barWidth * 60 / 100;
+auto progressLine = Line(
+    Point(barX, barY),
+    Point(barX + progressWidth, barY),
+    barHeight, Colors::Green
+);
+```
+
+### Connection Lines
+
+```cpp
+auto circle1 = Circle(15, Point(100, 100), Colors::Blue);
+auto circle2 = Circle(15, Point(200, 150), Colors::Red);
+auto circle3 = Circle(15, Point(300, 100), Colors::Green);
+
+// Connect circles
+auto connection1 = Line(Point(100, 100), Point(200, 150), 2, Colors::Yellow);
+auto connection2 = Line(Point(200, 150), Point(300, 100), 2, Colors::Yellow);
+auto connection3 = Line(Point(300, 100), Point(100, 100), 2, Colors::Yellow);
+```
+
+### Arrow
+
+```cpp
+Point arrowStart(100, 100);
+Point arrowEnd(220, 100);
+int arrowSize = 20;
+
+// Main line
+auto arrowLine = Line(arrowStart, arrowEnd, 4, Colors::Red);
+
+// Arrowhead
+auto head1 = Line(
+    arrowEnd,
+    Point(arrowEnd.x - arrowSize, arrowEnd.y - arrowSize/2),
+    3, Colors::Red
+);
+auto head2 = Line(
+    arrowEnd,
+    Point(arrowEnd.x - arrowSize, arrowEnd.y + arrowSize/2),
+    3, Colors::Red
+);
+```
+
+### Animated Wave Lines
+
+```cpp
+static std::vector<std::shared_ptr<LineWidget>> waveLines;
+
+for (int i = 0; i < 15; ++i) {
+    auto line = Line(
+        Point(50 + i * 20, 300),
+        Point(50 + i * 20, 300),
+        3, Colors::Purple
+    );
+    waveLines.push_back(line);
+}
+
+// In draw callback:
+void draw() {
+    static int frame = 0;
+    frame++;
+    
+    for (int i = 0; i < waveLines.size(); ++i) {
+        double wave = std::sin((frame + i * 5) * 0.1) * 30;
+        waveLines[i]->setStart(Point(50 + i * 20, 300));
+        waveLines[i]->setEnd(Point(50 + i * 20, 300 + (int)wave));
+    }
+}
+```
+
+## Complete Example
+
+From `examples/cpp/new/line_widget_example.cpp`:
+
+```cpp
+#include <fern/fern.hpp>
+
+using namespace Fern;
+
+void setupUI() {
+    // Lines with different thicknesses
+    auto thinLine = Line(Point(50, 100), Point(250, 100), 1, Colors::White);
+    auto mediumLine = Line(Point(50, 120), Point(250, 120), 3, Colors::Green);
+    auto thickLine = Line(Point(50, 140), Point(250, 140), 6, Colors::Blue);
+    
+    // Create a rectangle
+    int x = 50, y = 200, width = 200, height = 100;
+    auto rectTop = Line(Point(x, y), Point(x + width, y), 3, Colors::Cyan);
+    auto rectRight = Line(Point(x + width, y), Point(x + width, y + height), 3, Colors::Cyan);
+    auto rectBottom = Line(Point(x + width, y + height), Point(x, y + height), 3, Colors::Cyan);
+    auto rectLeft = Line(Point(x, y + height), Point(x, y), 3, Colors::Cyan);
+}
+```
+
+## Use Cases
+
+- **Dividers** - Separate UI sections
+- **Borders** - Create custom borders and frames
+- **Shapes** - Draw geometric shapes
+- **Charts** - Create line charts and graphs
+- **Connections** - Connect UI elements visually
+- **Animations** - Create animated line effects
+
+## See Also
+
+- [CircleWidget](/widgets/circle) - For circular shapes
+- [ProgressBarWidget](/widgets/progress-bar) - For progress visualization

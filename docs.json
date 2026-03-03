@@ -1,122 +1,175 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
-  "name": "Mint Starter Kit",
+  "name": "Fern UI Framework",
+  "theme": "palm",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#2d6a4f",
+    "light": "#52b788",
+    "dark": "#1b4332"
   },
-  "favicon": "/favicon.svg",
+  "navbar": {
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/fernkit/fern"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/fernkit/fern"
+    }
+  },
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Documentation",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Get Started",
             "pages": [
-              "index",
+              "introduction",
               "quickstart",
-              "development"
+              "installation"
             ]
           },
           {
-            "group": "Customization",
+            "group": "Core Concepts",
             "pages": [
-              "essentials/settings",
-              "essentials/navigation"
+              "core/architecture",
+              "core/widget-system",
+              "core/layout-engine",
+              "core/rendering",
+              "core/event-system"
             ]
           },
           {
-            "group": "Writing content",
+            "group": "Guides",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
+              "guides/creating-widgets",
+              "guides/layouts",
+              "guides/styling",
+              "guides/fonts",
+              "guides/signals-slots",
+              "guides/responsive-design"
             ]
           },
           {
-            "group": "AI tools",
+            "group": "Platform",
             "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "platform/overview",
+              "platform/linux",
+              "platform/web-wasm",
+              "platform/macos",
+              "platform/windows"
             ]
           }
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "Widgets",
         "groups": [
           {
-            "group": "API documentation",
+            "group": "Overview",
             "pages": [
-              "api-reference/introduction"
+              "widgets/overview"
             ]
           },
           {
-            "group": "Endpoint examples",
+            "group": "Basic Widgets",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "widgets/text",
+              "widgets/button",
+              "widgets/text-input"
+            ]
+          },
+          {
+            "group": "Shapes",
+            "pages": [
+              "widgets/circle",
+              "widgets/line"
+            ]
+          },
+          {
+            "group": "Interactive Widgets",
+            "pages": [
+              "widgets/slider",
+              "widgets/radio-button",
+              "widgets/dropdown",
+              "widgets/progress-bar",
+              "widgets/circular-indicator"
+            ]
+          },
+          {
+            "group": "Layout Containers",
+            "pages": [
+              "widgets/row-column",
+              "widgets/padding",
+              "widgets/center",
+              "widgets/expanded",
+              "widgets/sized-box"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "CLI Reference",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "cli/overview"
+            ]
+          },
+          {
+            "group": "Commands",
+            "pages": [
+              "cli/bloom",
+              "cli/sprout",
+              "cli/fire",
+              "cli/prepare",
+              "cli/install",
+              "cli/templates",
+              "cli/lsp",
+              "cli/web-cache"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Core",
+            "pages": [
+              "api/canvas",
+              "api/input",
+              "api/scene-manager",
+              "api/widget-manager",
+              "api/signal"
+            ]
+          },
+          {
+            "group": "Graphics",
+            "pages": [
+              "api/primitives",
+              "api/colors"
+            ]
+          },
+          {
+            "group": "Font System",
+            "pages": [
+              "api/font",
+              "api/font-manager",
+              "api/ttf-reader"
+            ]
+          },
+          {
+            "group": "C API",
+            "pages": [
+              "api/c-bindings"
             ]
           }
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
-  },
-  "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
-  },
-  "navbar": {
-    "links": [
-      {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
-      }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
-    }
-  },
-  "contextual": {
-    "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
-  },
-  "footer": {
-    "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
-    }
+    ]
   }
 }

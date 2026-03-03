@@ -1,0 +1,500 @@
+---
+title: Styling and Colors
+description: Customize widget appearance with colors, borders, backgrounds, and visual effects
+---
+
+## Overview
+
+Fern provides a comprehensive color system and styling options for customizing the visual appearance of widgets. All colors use 32-bit RGBA format (0xAABBGGRR).
+
+## Color System
+
+### Predefined Colors
+
+Fern includes a rich palette of predefined colors in the `Fern::Colors` namespace:
+
+<Tabs>
+  <Tab title="Basic Colors">
+    ```cpp
+    using namespace Fern;
+    
+    Colors::Black       // 0xFF000000
+    Colors::White       // 0xFFFFFFFF
+    Colors::Red         // 0xFFFF0000
+    Colors::Green       // 0xFF00FF00
+    Colors::Blue        // 0xFF0000FF
+    Colors::Yellow      // 0xFFFFFF00
+    Colors::Cyan        // 0xFF00FFFF
+    Colors::Magenta     // 0xFFFF00FF
+    ```
+  </Tab>
+  
+  <Tab title="Grayscale">
+    ```cpp
+    Colors::Gray        // 0xFF808080
+    Colors::DarkGray    // 0xFF404040
+    Colors::LightGray   // 0xFFC0C0C0
+    Colors::Charcoal    // 0xFF202020
+    ```
+  </Tab>
+  
+  <Tab title="UI Semantic">
+    ```cpp
+    Colors::Primary     // 0xFF007BFF (Blue)
+    Colors::Success     // 0xFF28A745 (Green)
+    Colors::Warning     // 0xFFFFC107 (Yellow)
+    Colors::Danger      // 0xFFDC3545 (Red)
+    Colors::Info        // 0xFF17A2B8 (Blue)
+    Colors::Secondary   // 0xFF6C757D (Gray)
+    ```
+  </Tab>
+  
+  <Tab title="Extended Palette">
+    ```cpp
+    // Blues
+    Colors::DarkBlue, Colors::LightBlue, Colors::SkyBlue
+    Colors::Navy, Colors::Turquoise
+    
+    // Reds
+    Colors::DarkRed, Colors::Crimson, Colors::LightRed, Colors::Coral
+    
+    // Greens
+    Colors::DarkGreen, Colors::LightGreen, Colors::Lime
+    Colors::Forest, Colors::Olive
+    
+    // Purples
+    Colors::Purple, Colors::DarkPurple, Colors::Violet
+    Colors::Pink, Colors::HotPink
+    
+    // Oranges
+    Colors::Orange, Colors::Gold, Colors::Amber
+    ```
+  </Tab>
+</Tabs>
+
+### Custom Colors
+
+Define custom colors using RGBA hex format:
+
+```cpp
+// Format: 0xAARRGGBB (Alpha, Red, Green, Blue)
+uint32_t myColor = 0xFF3B82F6;  // Opaque blue
+uint32_t transparent = 0x80FF0000;  // 50% transparent red
+uint32_t fullyTransparent = 0x00000000;  // Fully transparent
+```
+
+**Helper for RGB values:**
+
+```cpp
+// Create color from RGB components (0-255)
+inline uint32_t RGB(uint8_t r, uint8_t g, uint8_t b) {
+    return 0xFF000000 | (b << 16) | (g << 8) | r;
+}
+
+// Create color with alpha
+inline uint32_t RGBA(uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
+    return (a << 24) | (b << 16) | (g << 8) | r;
+}
+
+// Usage
+uint32_t orange = RGB(255, 165, 0);
+uint32_t semiTransparent = RGBA(255, 0, 0, 128);  // 50% red
+```
+
+### Color Blending
+
+Blend two colors with linear interpolation:
+
+```cpp
+uint32_t blended = Fern::Colors::blendColors(
+    Fern::Colors::Red,
+    Fern::Colors::Blue,
+    0.5f  // 0.0 = first color, 1.0 = second color
+);
+
+// Create fade effect
+for (float t = 0.0f; t <= 1.0f; t += 0.1f) {
+    uint32_t fadeColor = Colors::blendColors(
+        Colors::White,
+        Colors::Black,
+        t
+    );
+}
+```
+
+## Button Styling
+
+### ButtonStyle API
+
+Customize button appearance with the fluent `ButtonStyle` interface:
+
+```cpp
+using namespace Fern;
+
+ButtonStyle style;
+style.normalColor(Colors::Blue)        // Default state
+     .hoverColor(Colors::LightBlue)     // Mouse over
+     .pressColor(Colors::DarkBlue)      // Pressed down
+     .textColor(Colors::White)          // Text color
+     .textScale(2)                      // Text size (1-5)
+     .borderRadius(8)                   // Rounded corners (px)
+     .border(2, Colors::White);         // Border width & color
+
+auto button = Button(
+    ButtonConfig(100, 50, 150, 40, "Click Me").style(style)
+);
+```
+
+### Button Presets
+
+Use semantic presets for common button types:
+
+<CodeGroup>
+```cpp Primary
+auto btn = Button(ButtonPresets::Primary(x, y, 120, 40, "Submit"));
+// Blue theme for primary actions
+```
+
+```cpp Success
+auto btn = Button(ButtonPresets::Success(x, y, 120, 40, "Save"));
+// Green theme for success actions
+```
+
+```cpp Danger
+auto btn = Button(ButtonPresets::Danger(x, y, 120, 40, "Delete"));
+// Red theme for destructive actions
+```
+
+```cpp Warning
+auto btn = Button(ButtonPresets::Warning(x, y, 120, 40, "Caution"));
+// Orange theme for warnings
+```
+
+```cpp Secondary
+auto btn = Button(ButtonPresets::Secondary(x, y, 120, 40, "Cancel"));
+// Gray theme for secondary actions
+```
+</CodeGroup>
+
+**Custom Theme Example:**
+
+```cpp
+ButtonStyle modernStyle;
+modernStyle.normalColor(0xFF6366F1)      // Indigo
+           .hoverColor(0xFF818CF8)        // Lighter indigo
+           .pressColor(0xFF4F46E5)        // Darker indigo
+           .textColor(Colors::White)
+           .textScale(2)
+           .borderRadius(12);              // More rounded
+
+auto modernBtn = Button(
+    ButtonConfig(0, 0, 140, 45, "Modern").style(modernStyle)
+);
+```
+
+## Text Styling
+
+### TextStyle API
+
+Configure text appearance with `TextStyle`:
+
+```cpp
+using namespace Fern;
+
+TextStyle style;
+style.color(Colors::White)              // Text color
+     .fontSize(3)                        // Size (1-5 bitmap, 16+ TTF)
+     .useBitmapFont()                    // Font type
+     .alignment(1)                       // 0=left, 1=center, 2=right
+     .backgroundColor(Colors::DarkGray)  // Background
+     .padding(10)                        // Padding around text
+     .shadow(true, Colors::Black, 2);    // Drop shadow
+
+auto text = Text(
+    TextConfig(100, 50, "Hello World").style(style)
+);
+```
+
+### Text Presets
+
+Use semantic text styles:
+
+```cpp
+using namespace Fern::TextPresets;
+
+auto title = Text(Title(100, 50, "Main Title"));
+auto subtitle = Text(Subtitle(100, 80, "Subtitle text"));
+auto body = Text(Body(100, 110, "Body content"));
+auto caption = Text(Caption(100, 140, "Small caption"));
+auto errorMsg = Text(Error(100, 170, "Error message"));
+auto successMsg = Text(Success(100, 200, "Success!"));
+```
+
+### Font Types
+
+<Tabs>
+  <Tab title="Bitmap Font">
+    ```cpp
+    TextStyle style;
+    style.useBitmapFont()
+         .fontSize(2);  // 1-5 scale
+    
+    // Bitmap fonts are pixel-perfect, retro style
+    // Best for: UI labels, pixel art games
+    ```
+  </Tab>
+  
+  <Tab title="TTF Font">
+    ```cpp
+    TextStyle style;
+    style.useTTFFont("arial")  // Font name
+         .fontSize(18);        // 16+ recommended
+    
+    // TTF fonts are smooth and scalable
+    // Best for: Modern UIs, large text
+    ```
+  </Tab>
+</Tabs>
+
+See [Font System](/guides/fonts) for detailed font usage.
+
+## Container Styling
+
+### Solid Color Backgrounds
+
+```cpp
+auto container = Fern::Container(
+    Fern::Colors::DarkGray,  // Background color
+    100, 50, 300, 200,       // Position and size
+    contentWidget            // Child widget
+);
+```
+
+### Gradient Backgrounds
+
+Create linear gradients:
+
+```cpp
+using namespace Fern;
+
+LinearGradient gradient({
+    {Colors::Blue, 0.0f},     // Start color
+    {Colors::Purple, 0.5f},   // Middle color
+    {Colors::Red, 1.0f}       // End color
+}, LinearGradient::VERTICAL);
+
+auto gradientBox = GradientContainer(
+    0, 0, 400, 300,
+    gradient,
+    false,
+    contentWidget
+);
+```
+
+**Horizontal Gradient:**
+
+```cpp
+LinearGradient horizGradient({
+    {Colors::Cyan, 0.0f},
+    {Colors::Magenta, 1.0f}
+}, LinearGradient::HORIZONTAL);
+```
+
+## Drawing Primitives
+
+Direct drawing with color:
+
+```cpp
+using namespace Fern;
+
+// Fill entire canvas
+Draw::fill(Colors::Black);
+
+// Draw rectangle
+Draw::fillRect(x, y, width, height, Colors::Blue);
+Draw::rect(x, y, width, height, Colors::White);  // Outline
+
+// Draw circle
+Draw::fillCircle(x, y, radius, Colors::Red);
+Draw::circle(x, y, radius, Colors::Yellow);  // Outline
+
+// Draw line
+Draw::line(x1, y1, x2, y2, Colors::Green);
+
+// Draw rounded rectangle
+Draw::roundedRect(x, y, width, height, radius, Colors::Orange);
+```
+
+## Color Schemes
+
+Define consistent color schemes:
+
+```cpp
+namespace MyTheme {
+    // Dark theme
+    const uint32_t Background = 0xFF1A1A1A;
+    const uint32_t Surface = 0xFF2A2A2A;
+    const uint32_t Primary = 0xFF3B82F6;
+    const uint32_t Secondary = 0xFF8B5CF6;
+    const uint32_t TextPrimary = 0xFFFFFFFF;
+    const uint32_t TextSecondary = 0xFFE5E7EB;
+    const uint32_t Border = 0xFF374151;
+}
+
+// Apply theme
+void draw() {
+    Draw::fill(MyTheme::Background);
+}
+
+auto button = Button(
+    ButtonConfig(0, 0, 120, 40, "Click")
+        .style(ButtonStyle()
+            .normalColor(MyTheme::Primary)
+            .textColor(MyTheme::TextPrimary)
+        )
+);
+```
+
+**Theme Switching:**
+
+```cpp
+namespace Theme {
+    bool isDarkMode = true;
+    
+    uint32_t background() {
+        return isDarkMode ? 0xFF1A1A1A : 0xFFFFFFFF;
+    }
+    
+    uint32_t text() {
+        return isDarkMode ? 0xFFFFFFFF : 0xFF000000;
+    }
+}
+
+void toggleTheme() {
+    Theme::isDarkMode = !Theme::isDarkMode;
+    // Recreate widgets with new colors
+}
+```
+
+## Visual Effects
+
+### Text Shadow
+
+```cpp
+TextStyle style;
+style.shadow(true, Colors::Black, 3);  // Enabled, color, offset
+
+auto shadowText = Text(
+    TextConfig(100, 100, "Shadow Text").style(style)
+);
+```
+
+### Rounded Corners
+
+```cpp
+ButtonStyle style;
+style.borderRadius(16);  // Large radius for pill shape
+
+// Circle button (radius = half of size)
+style.borderRadius(25);  // For 50x50 button
+```
+
+### Borders
+
+```cpp
+ButtonStyle style;
+style.border(2, Colors::White);  // 2px white border
+
+// Outline button
+ButtonStyle outlineStyle;
+outlineStyle.normalColor(Colors::Transparent)
+            .hoverColor(0x20FFFFFF)  // Slight white overlay
+            .textColor(Colors::Primary)
+            .border(2, Colors::Primary);
+```
+
+### Hover Effects
+
+```cpp
+// Subtle hover
+ButtonStyle style;
+style.normalColor(0xFF3B82F6)
+     .hoverColor(0xFF60A5FA)   // Slightly lighter
+     .pressColor(0xFF2563EB);  // Slightly darker
+
+// Dramatic hover
+ButtonStyle dramaticStyle;
+dramaticStyle.normalColor(Colors::DarkGray)
+             .hoverColor(Colors::Primary)  // Color change on hover
+             .pressColor(Colors::DarkBlue);
+```
+
+## Best Practices
+
+<Steps>
+
+### Use Semantic Colors
+
+Prefer semantic names over arbitrary colors:
+
+```cpp
+// Good
+Colors::Success, Colors::Danger, Colors::Warning
+
+// Less clear
+Colors::Green, Colors::Red, Colors::Yellow
+```
+
+### Maintain Contrast
+
+Ensure text is readable against backgrounds:
+
+```cpp
+// Good contrast
+ButtonStyle().
+    normalColor(Colors::DarkBlue)
+    .textColor(Colors::White);
+
+// Poor contrast (avoid)
+ButtonStyle()
+    .normalColor(Colors::Gray)
+    .textColor(Colors::LightGray);  // Hard to read
+```
+
+### Consistent Theming
+
+Define colors in one place:
+
+```cpp
+// Good: centralized theme
+namespace Theme {
+    const uint32_t Primary = 0xFF3B82F6;
+    const uint32_t Surface = 0xFF2A2A2A;
+}
+
+// Avoid: scattered color values
+auto btn1 = /* ... */ .normalColor(0xFF3B82F6);
+auto btn2 = /* ... */ .normalColor(0xFF3B82F6);  // Duplicate
+```
+
+### Use Alpha for Overlays
+
+```cpp
+// Semi-transparent overlay
+uint32_t overlay = 0x80000000;  // 50% black
+
+// Hover effect with transparency
+uint32_t hoverOverlay = 0x20FFFFFF;  // 12.5% white
+```
+
+</Steps>
+
+<Tip>
+Use `Colors::Transparent` (0x00000000) for invisible backgrounds in containers and buttons.
+</Tip>
+
+## Next Steps
+
+- Explore [Font System](/guides/fonts) for typography
+- Learn about [Layouts](/guides/layouts) for positioning
+- See [Creating Widgets](/guides/creating-widgets) for custom styling

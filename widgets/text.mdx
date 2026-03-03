@@ -1,0 +1,246 @@
+---
+title: TextWidget
+description: Display text with customizable fonts, colors, and styling
+---
+
+TextWidget provides flexible text rendering capabilities with support for both bitmap and TTF fonts, custom colors, alignment, backgrounds, and shadow effects.
+
+## Basic Usage
+
+```cpp
+#include <fern/fern.hpp>
+
+using namespace Fern;
+
+void setupUI() {
+    auto text = Text(Point(100, 50), "Hello, Fern!", 3, Colors::White);
+    addWidget(text);
+}
+```
+
+## Modern Configuration API
+
+```cpp
+auto config = TextConfig(100, 50, "Hello World")
+    .style(TextStyle()
+        .color(Colors::White)
+        .useTTFFont("arial")
+        .fontSize(20));
+
+auto text = Text(config);
+```
+
+## Constructor
+
+### Modern Constructor
+
+<ParamField path="config" type="TextConfig">
+  Configuration object containing position, text, and style
+</ParamField>
+
+### Legacy Constructor
+
+<ParamField path="position" type="Point">
+  Position of the text (x, y coordinates)
+</ParamField>
+
+<ParamField path="text" type="std::string">
+  Text content to display
+</ParamField>
+
+<ParamField path="size" type="int">
+  Font size (1-5 for bitmap fonts, 16+ recommended for TTF)
+</ParamField>
+
+<ParamField path="color" type="uint32_t">
+  Text color in ARGB format
+</ParamField>
+
+<ParamField path="fontType" type="FontType" default="FontType::Bitmap">
+  Font type: `FontType::Bitmap` or `FontType::TTF`
+</ParamField>
+
+## TextStyle Configuration
+
+The `TextStyle` class provides a fluent interface for configuring text appearance:
+
+### Color Methods
+
+```cpp
+TextStyle& color(uint32_t c)                    // Set text color
+TextStyle& backgroundColor(uint32_t c)          // Set background color
+TextStyle& shadow(bool enabled, uint32_t color, int offset)
+```
+
+### Font Methods
+
+```cpp
+TextStyle& fontSize(int size)                   // Set font size
+TextStyle& useBitmapFont()                      // Use bitmap font
+TextStyle& useTTFFont(const std::string& name)  // Use TTF font
+```
+
+### Layout Methods
+
+```cpp
+TextStyle& alignment(int a)                     // 0=left, 1=center, 2=right
+TextStyle& padding(int p)                       // Padding around text
+```
+
+## Methods
+
+### Content Modification
+
+```cpp
+void setText(const std::string& text)
+const std::string& getText() const
+
+void setColor(uint32_t color)
+uint32_t getColor() const
+
+void setSize(int size)
+int getSize() const
+
+void setFontType(FontType type)
+FontType getFontType() const
+```
+
+### Configuration
+
+```cpp
+void setConfig(const TextConfig& config)
+const TextConfig& getConfig() const
+```
+
+## Examples
+
+### Basic Text
+
+```cpp
+auto text = Text(Point(100, 50), "Hello World", 2, Colors::White);
+```
+
+### Styled Text with Background
+
+```cpp
+auto config = TextConfig(100, 50, "Important!")
+    .style(TextStyle()
+        .color(Colors::Black)
+        .backgroundColor(Colors::Yellow)
+        .padding(5));
+
+auto text = Text(config);
+```
+
+### Text with Shadow
+
+```cpp
+TextStyle style;
+style.color(Colors::White)
+     .shadow(true, Colors::Gray, 2)
+     .fontSize(3);
+
+auto text = Text(TextConfig(100, 50, "Shadowed Text")
+    .style(style));
+```
+
+### TTF Font Text
+
+```cpp
+auto text = Text(TextConfig(100, 50, "Modern Text")
+    .style(TextStyle()
+        .useTTFFont("arial")
+        .fontSize(20)
+        .color(Colors::White)));
+```
+
+### Centered Text
+
+```cpp
+auto text = Text(TextConfig(200, 100, "Centered")
+    .style(TextStyle()
+        .alignment(1)  // Center alignment
+        .fontSize(3)
+        .color(Colors::Cyan)));
+```
+
+## Text Presets
+
+The `TextPresets` namespace provides common text configurations:
+
+```cpp
+// Title text
+auto title = Text(TextPresets::Title(100, 50, "Main Title"));
+
+// Subtitle text
+auto subtitle = Text(TextPresets::Subtitle(100, 80, "Subtitle"));
+
+// Body text
+auto body = Text(TextPresets::Body(100, 110, "Body text content"));
+
+// Caption text
+auto caption = Text(TextPresets::Caption(100, 140, "Small caption"));
+
+// Button text
+auto btnText = Text(TextPresets::Button(50, 50, "Click Me"));
+
+// Error text
+auto error = Text(TextPresets::Error(100, 50, "Error occurred"));
+
+// Success text
+auto success = Text(TextPresets::Success(100, 50, "Success!"));
+```
+
+## Font Types
+
+### Bitmap Fonts
+
+- Small, pixelated appearance
+- Fast rendering
+- Size range: 1-5
+- No anti-aliasing
+
+### TTF Fonts
+
+- Smooth, scalable rendering
+- Recommended size: 16+
+- Anti-aliased
+- Requires font file
+
+## Complete Example
+
+From `examples/cpp/new/01_hello_text.cpp`:
+
+```cpp
+#include <fern/fern.hpp>
+
+using namespace Fern;
+
+void setupUI() {
+    int width = Fern::getWidth();
+    int height = Fern::getHeight();
+    
+    auto centerWidget = std::make_shared<CenterWidget>(0, 0, width, height);
+    centerWidget->add(Text(Point(0, 0), "Hello, Fern!", 3, Colors::White));
+    
+    addWidget(centerWidget);
+}
+
+void draw() {
+    Draw::fill(Colors::DarkBlue);
+}
+
+int main() {
+    Fern::initialize();
+    setupUI();
+    Fern::setDrawCallback(draw);
+    Fern::startRenderLoop();
+    return 0;
+}
+```
+
+## See Also
+
+- [ButtonWidget](/widgets/button) - For clickable text buttons
+- [TextInputWidget](/widgets/text-input) - For editable text fields
+- [Layout Widgets](/widgets/row-column) - For arranging text with other widgets

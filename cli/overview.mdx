@@ -1,0 +1,185 @@
+---
+title: CLI Overview
+description: Command-line interface for the Fern UI Framework
+---
+
+The Fern CLI (Terra) provides a comprehensive set of tools for developing, building, and deploying Fern applications. It simplifies the development workflow with intuitive commands for project creation, compilation, and platform-specific builds.
+
+## Installation
+
+The Fern CLI is installed automatically when you install the Fern framework:
+
+```bash
+cd /path/to/fern
+./install.sh
+```
+
+After installation, the `fern` command will be available globally.
+
+## Quick Start
+
+<CodeGroup>
+```bash Create a new project
+fern sprout my_app
+cd my_app
+```
+
+```bash Run your project
+fern fire
+```
+
+```bash Build for web
+fern fire -p web
+```
+
+```bash Check system health
+fern bloom
+```
+</CodeGroup>
+
+## Available Commands
+
+<CardGroup cols={2}>
+  <Card title="bloom" icon="heartbeat" href="/cli/bloom">
+    Check system health and dependencies
+  </Card>
+  <Card title="sprout" icon="seedling" href="/cli/sprout">
+    Create a new Fern project
+  </Card>
+  <Card title="fire" icon="fire" href="/cli/fire">
+    Run or build your project
+  </Card>
+  <Card title="prepare" icon="box" href="/cli/prepare">
+    Build for production deployment
+  </Card>
+  <Card title="install" icon="download" href="/cli/install">
+    Install Fern packages
+  </Card>
+  <Card title="templates" icon="layer-group" href="/cli/templates">
+    Manage project templates
+  </Card>
+  <Card title="lsp" icon="code" href="/cli/lsp">
+    Language Server Protocol tools
+  </Card>
+  <Card title="web-cache" icon="database" href="/cli/web-cache">
+    Manage web build cache
+  </Card>
+</CardGroup>
+
+## Global Options
+
+<ParamField path="--help" type="flag">
+  Display help information for any command
+</ParamField>
+
+<ParamField path="--version" type="flag">
+  Display the Fern CLI version
+</ParamField>
+
+## Basic Usage
+
+Display help for the CLI:
+
+```bash
+fern --help
+```
+
+Get help for a specific command:
+
+```bash
+fern fire --help
+fern sprout --help
+```
+
+## Environment Variables
+
+<ParamField path="ORIGINAL_CWD" type="string">
+  The original working directory when the CLI was invoked. Used internally to maintain correct paths when changing directories.
+</ParamField>
+
+## Project Structure
+
+Fern projects created with `fern sprout` follow this structure:
+
+```
+my_app/
+├── lib/           # Main source code
+│   └── main.cpp
+├── web/           # Web platform files
+│   └── template.html
+├── linux/         # Linux platform files
+├── assets/        # Images, fonts, etc.
+├── examples/      # Example code
+├── .fern/         # Fern metadata
+├── .vscode/       # VS Code configuration
+├── fern.yaml      # Project configuration
+├── README.md
+└── .gitignore
+```
+
+## Configuration File
+
+Projects use `fern.yaml` for configuration:
+
+```yaml
+name: my_app
+version: 1.0.0
+description: A Fern project
+
+dependencies:
+  fern: ^0.1.0
+
+platforms:
+  web:
+    enabled: true
+    port: 3000
+  linux:
+    enabled: true
+
+build:
+  incremental: true
+  optimize: false
+```
+
+## Platform Support
+
+The Fern CLI supports multiple target platforms:
+
+- **Linux** - Native Linux applications using X11
+- **Web** - WebAssembly applications using Emscripten
+- **macOS** - Native macOS applications using Cocoa (experimental)
+
+## Development Workflow
+
+1. **Create a project** with `fern sprout`
+2. **Check your environment** with `fern bloom`
+3. **Develop locally** with `fern fire` for rapid iteration
+4. **Test on web** with `fern fire -p web`
+5. **Build for production** with `fern prepare <platform>`
+
+## Terminal Output
+
+The CLI provides color-coded output for better readability:
+
+- **Green** - Success messages
+- **Yellow** - Warnings and informational messages
+- **Red** - Errors
+- **Blue** - Headers and section titles
+- **Cyan** - Secondary information
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Create Your First Project" icon="rocket" href="/cli/sprout">
+    Learn how to create a new Fern project
+  </Card>
+  <Card title="Run and Build" icon="play" href="/cli/fire">
+    Compile and run your applications
+  </Card>
+  <Card title="System Health" icon="stethoscope" href="/cli/bloom">
+    Verify your development environment
+  </Card>
+  <Card title="Templates" icon="template" href="/cli/templates">
+    Use templates for common project types
+  </Card>
+</CardGroup>

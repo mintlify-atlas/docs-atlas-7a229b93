@@ -1,0 +1,267 @@
+---
+title: SliderWidget
+description: Draggable sliders for selecting numeric values
+---
+
+SliderWidget provides an interactive control for selecting numeric values within a range through dragging a thumb along a track.
+
+## Basic Usage
+
+```cpp
+#include <fern/fern.hpp>
+
+using namespace Fern;
+
+auto slider = Slider(SliderConfig(100, 50, 200, 20)
+    .range(0.0f, 100.0f)
+    .initialValue(50.0f));
+
+slider->onValueChanged.connect([](float value) {
+    std::cout << "Value: " << value << std::endl;
+});
+```
+
+## Constructor
+
+<ParamField path="config" type="SliderConfig">
+  Configuration object containing position, size, range, and style
+</ParamField>
+
+## SliderConfig
+
+Configure slider properties:
+
+```cpp
+SliderConfig(int x, int y, int width = 200, int height = 20)
+```
+
+### Configuration Methods
+
+```cpp
+SliderConfig& range(float minValue, float maxValue)  // Set value range
+SliderConfig& initialValue(float value)              // Set initial value
+SliderConfig& style(const SliderStyle& s)            // Set slider style
+```
+
+## SliderStyle
+
+Customize slider appearance:
+
+### Color Methods
+
+```cpp
+SliderStyle& trackColor(uint32_t color)       // Unfilled track color
+SliderStyle& fillColor(uint32_t color)        // Filled track color
+SliderStyle& thumbColor(uint32_t color)       // Thumb (handle) color
+SliderStyle& thumbHoverColor(uint32_t color)  // Thumb color when hovering
+```
+
+### Display Methods
+
+```cpp
+SliderStyle& thumbRadius(int radius)          // Thumb size
+SliderStyle& showValue(bool show)             // Show current value
+SliderStyle& textColor(uint32_t color)        // Value text color
+SliderStyle& textScale(int scale)             // Value text size
+```
+
+## Signals
+
+<ParamField path="onValueChanged" type="Signal<float>">
+  Emitted when the slider value changes
+</ParamField>
+
+<ParamField path="onDragging" type="Signal<bool>">
+  Emitted when drag state changes (true = dragging, false = released)
+</ParamField>
+
+## Methods
+
+### Value Management
+
+```cpp
+void setValue(float value)
+float getValue() const
+void setRange(float minValue, float maxValue)
+```
+
+## Examples
+
+### Basic Slider
+
+```cpp
+auto slider = Slider(SliderConfig(100, 50, 200, 20)
+    .range(0.0f, 100.0f)
+    .initialValue(50.0f));
+
+slider->onValueChanged.connect([](float value) {
+    std::cout << "Value: " << value << std::endl;
+});
+```
+
+### Volume Slider
+
+```cpp
+auto volumeSlider = Slider(SliderConfig(50, 100, 250, 25)
+    .range(0.0f, 100.0f)
+    .initialValue(75.0f)
+    .style(SliderStyle()
+        .trackColor(Colors::DarkGray)
+        .fillColor(Colors::Green)
+        .thumbColor(Colors::White)
+        .thumbHoverColor(Colors::LightGray)
+        .thumbRadius(12)
+        .showValue(true)
+        .textColor(Colors::White)));
+
+auto volumeLabel = Text(Point(50, 130), "Volume: 75%", 2, Colors::White);
+
+volumeslider->onValueChanged.connect([volumeLabel](float value) {
+    volumeLabel->setText("Volume: " + std::to_string((int)value) + "%");
+});
+```
+
+### Brightness Slider
+
+```cpp
+auto brightnessSlider = Slider(SliderConfig(50, 200, 250, 25)
+    .range(0.0f, 100.0f)
+    .initialValue(80.0f)
+    .style(SliderStyle()
+        .trackColor(Colors::DarkGray)
+        .fillColor(Colors::Yellow)
+        .thumbColor(Colors::Orange)
+        .thumbRadius(10)
+        .showValue(true)));
+```
+
+### Speed Control
+
+```cpp
+auto speedSlider = Slider(SliderConfig(50, 300, 250, 30)
+    .range(0.0f, 200.0f)
+    .initialValue(50.0f)
+    .style(SliderStyle()
+        .trackColor(Colors::DarkGray)
+        .fillColor(Colors::Red)
+        .thumbColor(Colors::White)
+        .thumbRadius(15)
+        .showValue(true)));
+
+speedSlider->onValueChanged.connect([](float value) {
+    std::cout << "Speed: " << (int)value << " km/h" << std::endl;
+});
+```
+
+### Drag State Tracking
+
+```cpp
+auto slider = Slider(SliderConfig(50, 400, 200, 20)
+    .range(0.0f, 100.0f)
+    .initialValue(50.0f));
+
+slider->onDragging.connect([](bool isDragging) {
+    if (isDragging) {
+        std::cout << "Started dragging" << std::endl;
+    } else {
+        std::cout << "Stopped dragging" << std::endl;
+    }
+});
+```
+
+### Color Component Slider
+
+```cpp
+auto redSlider = Slider(SliderConfig(50, 50, 200, 20)
+    .range(0.0f, 255.0f)
+    .initialValue(128.0f)
+    .style(SliderStyle()
+        .fillColor(Colors::Red)
+        .trackColor(Colors::DarkGray)));
+
+auto greenSlider = Slider(SliderConfig(50, 80, 200, 20)
+    .range(0.0f, 255.0f)
+    .initialValue(128.0f)
+    .style(SliderStyle()
+        .fillColor(Colors::Green)
+        .trackColor(Colors::DarkGray)));
+
+auto blueSlider = Slider(SliderConfig(50, 110, 200, 20)
+    .range(0.0f, 255.0f)
+    .initialValue(128.0f)
+    .style(SliderStyle()
+        .fillColor(Colors::Blue)
+        .trackColor(Colors::DarkGray)));
+```
+
+## Slider Presets
+
+The `SliderPresets` namespace provides common configurations:
+
+```cpp
+// Default slider
+auto slider1 = Slider(SliderPresets::Default(50, 50));
+
+// Volume slider preset
+auto volume = Slider(SliderPresets::Volume(50, 100, 250, 25));
+
+// Brightness slider preset
+auto brightness = Slider(SliderPresets::Brightness(50, 150, 250, 25));
+
+// Color component slider
+auto colorComp = Slider(SliderPresets::ColorComponent(50, 200));
+```
+
+## Complete Example
+
+```cpp
+#include <fern/fern.hpp>
+
+using namespace Fern;
+
+static std::shared_ptr<TextWidget> volumeLabel;
+
+void setupUI() {
+    auto volumeSlider = Slider(SliderConfig(0, 0, 250, 25)
+        .range(0.0f, 100.0f)
+        .initialValue(75.0f)
+        .style(SliderStyle()
+            .trackColor(Colors::DarkGray)
+            .fillColor(Colors::Green)
+            .thumbColor(Colors::White)
+            .thumbHoverColor(Colors::LightGray)
+            .thumbRadius(12)
+            .showValue(true)
+            .textColor(Colors::White)
+            .textScale(2)));
+    
+    volumeLabel = Text(Point(0, 0), "Volume: 75%", 2, Colors::White);
+    
+    volumeSlider->onValueChanged.connect([](float value) {
+        volumeLabel->setText("Volume: " + std::to_string((int)value) + "%");
+    });
+    
+    auto layout = Column({
+        volumeSlider,
+        SizedBox(0, 10),
+        volumeLabel
+    });
+    
+    addWidget(Center(layout));
+}
+```
+
+## Use Cases
+
+- **Volume controls** - Audio level adjustment
+- **Brightness** - Screen or light brightness
+- **Speed controls** - Animation or playback speed
+- **Color pickers** - RGB component selection
+- **Settings** - Numeric configuration values
+- **Game controls** - Difficulty, sensitivity, etc.
+
+## See Also
+
+- [ProgressBarWidget](/widgets/progress-bar) - For non-interactive progress display
+- [RadioButtonWidget](/widgets/radio-button) - For discrete value selection
+- [DropdownWidget](/widgets/dropdown) - For selecting from predefined options

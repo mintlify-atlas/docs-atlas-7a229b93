@@ -1,0 +1,427 @@
+---
+title: lsp
+description: Manage the Gleeb Language Server Protocol for Fern development
+---
+
+The `lsp` command manages the Gleeb Language Server Protocol (LSP) server, which provides IDE features like autocomplete, error checking, and code navigation for Fern development.
+
+## Usage
+
+```bash
+fern lsp <command> [options]
+```
+
+## Commands
+
+### start
+
+Start the Gleeb LSP server:
+
+```bash
+fern lsp start [options]
+```
+
+<ParamField path="--background" type="flag">
+  Run server in background (daemon mode)
+</ParamField>
+
+<ParamField path="-b" type="flag">
+  Short form of `--background`
+</ParamField>
+
+<ParamField path="--port" type="number">
+  TCP port to listen on (otherwise uses stdio)
+</ParamField>
+
+Examples:
+
+```bash
+# Start in foreground (for debugging)
+fern lsp start
+
+# Start in background
+fern lsp start --background
+
+# Start on specific port
+fern lsp start --port 9000 --background
+```
+
+### stop
+
+Stop the running LSP server:
+
+```bash
+fern lsp stop
+```
+
+<CodeGroup>
+```bash Output
+LSP server stopped
+```
+</CodeGroup>
+
+### status
+
+Show LSP server status and configuration:
+
+```bash
+fern lsp status
+```
+
+<CodeGroup>
+```bash Output
+LSP Server Status
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Gleeb LSP installed: Yes
+Server path: ~/.fern/gleeb/dist/server.js
+Server running: Yes
+Process ID: 12345
+VS Code configured: Yes
+Node.js available: Yes
+```
+</CodeGroup>
+
+### config
+
+Configure editor integration:
+
+```bash
+fern lsp config [options]
+```
+
+<ParamField path="--editor" type="string" default="vscode">
+  Editor to configure (currently only `vscode` supported)
+</ParamField>
+
+Example:
+
+```bash
+fern lsp config --editor vscode
+```
+
+<CodeGroup>
+```bash Output
+Configuring VS Code for Gleeb LSP...
+
+VS Code configured successfully
+Install the 'Gleeb LSP for Fern UI' extension from VS Code marketplace
+Extension ID: fernkit.gleeb-lsp
+```
+</CodeGroup>
+
+### install
+
+Install or reinstall the Gleeb LSP server:
+
+```bash
+fern lsp install
+```
+
+<CodeGroup>
+```bash Output
+Installing Gleeb LSP...
+Production mode: Cloning from GitHub
+
+Cloning Gleeb LSP from GitHub...
+Copying to ~/.fern/gleeb...
+Installing dependencies...
+Building LSP server...
+Created launcher script
+
+Gleeb LSP installed successfully
+```
+</CodeGroup>
+
+### restart
+
+Restart the LSP server:
+
+```bash
+fern lsp restart
+```
+
+Equivalent to running `stop` then `start --background`.
+
+## Installation
+
+The LSP server must be installed before use:
+
+```bash
+fern lsp install
+```
+
+This:
+1. Clones Gleeb LSP from GitHub (or uses local copy if in development)
+2. Installs Node.js dependencies
+3. Builds the TypeScript source
+4. Creates launcher scripts in `~/.local/bin/`
+
+## IDE Integration
+
+### VS Code
+
+<Steps>
+  <Step title="Install LSP server">
+    ```bash
+    fern lsp install
+    ```
+  </Step>
+  
+  <Step title="Configure VS Code">
+    ```bash
+    fern lsp config --editor vscode
+    ```
+  </Step>
+  
+  <Step title="Install VS Code extension">
+    Open VS Code and install the "Gleeb LSP for Fern UI" extension:
+    
+    ```
+    Ctrl+P → ext install fernkit.gleeb-lsp
+    ```
+  </Step>
+  
+  <Step title="Start LSP server">
+    ```bash
+    fern lsp start --background
+    ```
+  </Step>
+</Steps>
+
+The extension provides:
+- **Autocomplete** - Code completion for Fern APIs
+- **Error checking** - Real-time syntax and type errors
+- **Go to definition** - Jump to function/class definitions
+- **Hover information** - Documentation on hover
+- **Code formatting** - Automatic code formatting
+
+### Manual Configuration
+
+If automatic configuration doesn't work, add to VS Code `settings.json`:
+
+```json
+{
+  "gleeb.enable": true,
+  "gleeb.serverPath": "~/.fern/gleeb/dist/server.js",
+  "gleeb.trace.server": "verbose"
+}
+```
+
+## Server Modes
+
+### Stdio Mode (Default)
+
+Server communicates over stdin/stdout:
+
+```bash
+fern lsp start --background
+```
+
+Used by most editors/IDEs.
+
+### TCP Mode
+
+Server listens on a network port:
+
+```bash
+fern lsp start --port 9000 --background
+```
+
+Useful for:
+- Remote development
+- Debugging
+- Multiple client connections
+
+## Requirements
+
+The LSP server requires:
+
+- **Node.js** (v14 or later)
+- **npm** (comes with Node.js)
+- **Git** (for installation)
+
+Check with:
+
+```bash
+node --version
+npm --version
+git --version
+```
+
+Install Node.js from [nodejs.org](https://nodejs.org/) if needed.
+
+## Server Locations
+
+<ParamField path="~/.fern/gleeb/" type="directory">
+  LSP server installation directory
+</ParamField>
+
+<ParamField path="~/.fern/gleeb/dist/server.js" type="file">
+  Compiled LSP server executable
+</ParamField>
+
+<ParamField path="~/.fern/gleeb/server.pid" type="file">
+  Process ID file (when running in background)
+</ParamField>
+
+<ParamField path="~/.local/bin/gleeb-lsp" type="file">
+  Launcher script for manual server startup
+</ParamField>
+
+## Development Mode
+
+When developing Fern itself:
+
+```bash
+# Use local Gleeb sources
+cd /path/to/fern
+fern lsp install  # Detects and uses local gleeb/ directory
+
+# Changes to gleeb/ source
+cd gleeb
+npm run build
+
+# Restart server to use new build
+fern lsp restart
+```
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Node.js not found">
+    ```bash
+    fern lsp install
+    # Error: Node.js not found
+    ```
+    
+    Solution: Install Node.js from [nodejs.org](https://nodejs.org/):
+    ```bash
+    # Ubuntu/Debian
+    curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+    sudo apt-get install -y nodejs
+    
+    # Fedora
+    sudo dnf install nodejs
+    ```
+  </Accordion>
+  
+  <Accordion title="Server won't start">
+    Check the status:
+    ```bash
+    fern lsp status
+    ```
+    
+    Try reinstalling:
+    ```bash
+    fern lsp stop
+    rm -rf ~/.fern/gleeb
+    fern lsp install
+    fern lsp start --background
+    ```
+  </Accordion>
+  
+  <Accordion title="VS Code extension not working">
+    1. Verify server is running:
+       ```bash
+       fern lsp status
+       ```
+    
+    2. Check VS Code output panel:
+       - View → Output
+       - Select "Gleeb LSP" from dropdown
+    
+    3. Restart VS Code and the LSP server:
+       ```bash
+       fern lsp restart
+       ```
+  </Accordion>
+  
+  <Accordion title="Build failed during install">
+    ```bash
+    fern lsp install
+    # Error: npm run build failed
+    ```
+    
+    Solution: Check npm dependencies:
+    ```bash
+    cd ~/.fern/gleeb
+    rm -rf node_modules package-lock.json
+    npm install
+    npm run build
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Features
+
+The Gleeb LSP provides:
+
+### Code Completion
+
+- API method suggestions
+- Parameter hints
+- Import suggestions
+- Fern namespace completion
+
+### Diagnostics
+
+- Syntax errors
+- Type errors
+- Undefined reference warnings
+- Best practice suggestions
+
+### Code Navigation
+
+- Go to definition
+- Find references
+- Workspace symbol search
+- Document outline
+
+### Documentation
+
+- Hover documentation
+- Signature help
+- Parameter documentation
+- Example code snippets
+
+## Manual Server Control
+
+The LSP can also be started manually:
+
+```bash
+# Using launcher script
+~/.local/bin/gleeb-lsp
+
+# Direct Node.js invocation
+cd ~/.fern/gleeb
+node dist/server.js --stdio
+```
+
+## Logs
+
+View server logs for debugging:
+
+```bash
+# Foreground mode logs to console
+fern lsp start
+
+# Background mode logs to file
+tail -f ~/.fern/gleeb/server.log
+```
+
+## Updating
+
+To update to the latest version:
+
+```bash
+# Reinstall from GitHub
+fern lsp stop
+fern lsp install
+fern lsp start --background
+```
+
+## Related Commands
+
+- [`fern bloom`](/cli/bloom) - Checks if Node.js is available
+- [`fern sprout`](/cli/sprout) - Creates projects with VS Code config

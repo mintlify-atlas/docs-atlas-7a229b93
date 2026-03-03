@@ -1,0 +1,188 @@
+---
+title: Signal
+description: Type-safe event signaling and callback management system
+---
+
+Signal provides a type-safe event system for connecting callbacks (slots) to events. When a signal is emitted, all connected slots are called with the provided arguments. This is commonly used for UI event handling.
+
+## Template Parameters
+
+```cpp
+template <typename... Args>
+class Signal
+```
+
+<ParamField path="Args" type="typename..." required>
+  Types of arguments passed when the signal is emitted
+</ParamField>
+
+## Type Definitions
+
+### ConnectionID
+
+```cpp
+using ConnectionID = size_t;
+```
+
+Unique identifier for signal connections. Used to disconnect specific callbacks.
+
+### SlotFunction
+
+```cpp
+using SlotFunction = std::function<void(Args...)>;
+```
+
+Function type for signal slots. Must match the signal's template parameters.
+
+## Methods
+
+### connect()
+
+```cpp
+ConnectionID connect(SlotFunction slot)
+```
+
+Connects a callback function to the signal. The callback will be called when the signal is emitted.
+
+<ParamField path="slot" type="SlotFunction" required>
+  Function to call when signal is emitted
+</ParamField>
+
+<ResponseField name="return" type="ConnectionID">
+  Unique ID for this connection (use for disconnect)
+</ResponseField>
+
+```cpp
+Signal<int, std::string> mySignal;
+
+auto id = mySignal.connect([](int value, const std::string& text) {
+    std::cout << "Received: " << value << ", " << text << std::endl;
+});
+```
+
+### emit()
+
+```cpp
+void emit(Args... args) const
+```
+
+Emits the signal, calling all connected slots with the provided arguments.
+
+<ParamField path="args" type="Args..." required>
+  Arguments to pass to all connected functions
+</ParamField>
+
+```cpp
+mySignal.emit(42, "Hello"); // Calls all connected functions
+```
+
+### disconnect()
+
+```cpp
+void disconnect(ConnectionID id)
+```
+
+Disconnects a specific slot from the signal. The callback will no longer be called when the signal is emitted.
+
+<ParamField path="id" type="ConnectionID" required>
+  ConnectionID returned from connect()
+</ParamField>
+
+```cpp
+auto id = mySignal.connect(callback);
+mySignal.disconnect(id);  // Remove the connection
+```
+
+## Example Usage
+
+### Basic Signal
+
+```cpp
+Signal<int, std::string> mySignal;
+
+auto id = mySignal.connect([](int value, const std::string& text) {
+    std::cout << "Received: " << value << ", " << text << std::endl;
+});
+
+mySignal.emit(42, "Hello"); // Calls the connected function
+mySignal.disconnect(id);    // Remove the connection
+```
+
+### Widget Event Handling
+
+```cpp
+class Button {
+public:
+    Signal<> onClick;  // No arguments
+    
+    void handleClick() {
+        onClick.emit();
+    }
+};
+
+Button button;
+button.onClick.connect([]() {
+    std::cout << "Button clicked!" << std::endl;
+});
+```
+
+### Multiple Connections
+
+```cpp
+Signal<int> valueChanged;
+
+auto id1 = valueChanged.connect([](int value) {
+    std::cout << "Handler 1: " << value << std::endl;
+});
+
+auto id2 = valueChanged.connect([](int value) {
+    std::cout << "Handler 2: " << value << std::endl;
+});
+
+valueChanged.emit(100);  // Calls both handlers
+valueChanged.disconnect(id1);  // Remove first handler
+valueChanged.emit(200);  // Only calls second handler
+```
+
+### Event Data
+
+```cpp
+struct MouseEvent {
+    int x, y;
+    bool leftButton;
+};
+
+Signal<MouseEvent> onMouseClick;
+
+onMouseClick.connect([](MouseEvent event) {
+    std::cout << "Clicked at (" << event.x << ", " << event.y << ")" << std::endl;
+});
+
+onMouseClick.emit({100, 50, true});
+```
+
+## Common Patterns
+
+### Button Click Handler
+
+```cpp
+button->onClick.connect([]() {
+    std::cout << "Button clicked!" << std::endl;
+});
+```
+
+### Value Changed Handler
+
+```cpp
+slider->onValueChanged.connect([](float value) {
+    std::cout << "New value: " << value << std::endl;
+});
+```
+
+### Text Input Handler
+
+```cpp
+textInput->onTextChanged.connect([](const std::string& text) {
+    std::cout << "Text changed to: " << text << std::endl;
+});
+```

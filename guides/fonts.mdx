@@ -1,0 +1,482 @@
+---
+title: Font System
+description: Use bitmap and TTF fonts for text rendering with custom font loading
+---
+
+## Overview
+
+Fern supports two font rendering systems:
+
+- **Bitmap Fonts**: Pixel-perfect, retro-style fonts built into the framework
+- **TTF Fonts**: Smooth, scalable TrueType fonts loaded from .ttf files
+
+## Font Types
+
+### Bitmap Fonts
+
+Bitmap fonts are rendered using a built-in pixel font, ideal for pixel art games and retro UIs.
+
+```cpp
+using namespace Fern;
+
+// Use bitmap font (default)
+TextStyle style;
+style.useBitmapFont()
+     .fontSize(2);  // Scale: 1 (small) to 5 (large)
+
+auto text = Text(
+    TextConfig(100, 50, "Pixel Perfect!").style(style)
+);
+```
+
+**Font Size Scale:**
+
+<Tabs>
+  <Tab title="Size 1">
+    ```cpp
+    style.fontSize(1);  // Very small, compact
+    ```
+    Best for: Small labels, captions
+  </Tab>
+  
+  <Tab title="Size 2">
+    ```cpp
+    style.fontSize(2);  // Normal size (default)
+    ```
+    Best for: Body text, button labels
+  </Tab>
+  
+  <Tab title="Size 3">
+    ```cpp
+    style.fontSize(3);  // Medium-large
+    ```
+    Best for: Headings, emphasis
+  </Tab>
+  
+  <Tab title="Size 4-5">
+    ```cpp
+    style.fontSize(4);  // Large
+    style.fontSize(5);  // Extra large
+    ```
+    Best for: Titles, big numbers
+  </Tab>
+</Tabs>
+
+### TTF Fonts
+
+TTF fonts provide smooth, scalable text rendering from TrueType font files.
+
+```cpp
+using namespace Fern;
+
+// Load TTF font
+Font::loadTTFFont("arial", "assets/fonts/arial.ttf");
+Font::setDefaultTTFFont("arial");
+
+// Use TTF font
+TextStyle style;
+style.useTTFFont("arial")
+     .fontSize(20);  // Point size (16+ recommended)
+
+auto text = Text(
+    TextConfig(100, 50, "Smooth Text!").style(style)
+);
+```
+
+## Loading TTF Fonts
+
+<Steps>
+
+### Step 1: Prepare Font Files
+
+Place your .ttf files in your project:
+
+```
+project/
+├── assets/
+│   └── fonts/
+│       ├── arial.ttf
+│       ├── roboto.ttf
+│       └── ubuntu-mono.ttf
+└── main.cpp
+```
+
+### Step 2: Load Fonts
+
+Load fonts before using them:
+
+```cpp
+#include <fern/fern.hpp>
+
+int main() {
+    Fern::initialize();
+    
+    // Load multiple fonts
+    Fern::Font::loadTTFFont("arial", "assets/fonts/arial.ttf");
+    Fern::Font::loadTTFFont("roboto", "assets/fonts/roboto.ttf");
+    Fern::Font::loadTTFFont("mono", "assets/fonts/ubuntu-mono.ttf");
+    
+    // Set default TTF font
+    Fern::Font::setDefaultTTFFont("roboto");
+    
+    setupUI();
+    Fern::setDrawCallback(draw);
+    Fern::startRenderLoop();
+    return 0;
+}
+```
+
+### Step 3: Use Loaded Fonts
+
+```cpp
+void setupUI() {
+    using namespace Fern;
+    
+    // Use default TTF font
+    auto text1 = Text(
+        TextConfig(100, 50, "Default TTF")
+            .style(TextStyle().useTTFFont().fontSize(20))
+    );
+    
+    // Use specific font
+    auto text2 = Text(
+        TextConfig(100, 80, "Arial Text")
+            .style(TextStyle().useTTFFont("arial").fontSize(24))
+    );
+    
+    // Use monospace font
+    auto code = Text(
+        TextConfig(100, 110, "code = 42;")
+            .style(TextStyle().useTTFFont("mono").fontSize(18))
+    );
+}
+```
+
+</Steps>
+
+## TTF Helper Functions
+
+Simplify TTF usage with helper functions:
+
+```cpp
+using namespace Fern;
+
+// Load font
+TTF::load("roboto", "assets/fonts/Roboto-Regular.ttf");
+TTF::setDefault("roboto");
+
+// Render text directly
+TTF::render(
+    Canvas::getInstance(),
+    "Hello TTF!",
+    100, 50,        // Position
+    24,             // Size
+    Colors::White,  // Color
+    "roboto"        // Font (optional, uses default if empty)
+);
+
+// Get text dimensions
+int width = TTF::textWidth("Sample", 20, "roboto");
+int height = TTF::textHeight(20, "roboto");
+```
+
+## Text Metrics
+
+Calculate text dimensions for layout:
+
+```cpp
+using namespace Fern;
+
+std::string text = "Click Me";
+
+// Bitmap font metrics
+int bitmapWidth = Font::getTextWidth(text, 2, FontType::Bitmap);
+int bitmapHeight = Font::getTextHeight(2, FontType::Bitmap);
+
+// TTF font metrics
+Font::loadTTFFont("arial", "fonts/arial.ttf");
+int ttfWidth = Font::getTextWidth(text, 20, FontType::TTF);
+int ttfHeight = Font::getTextHeight(20, FontType::TTF);
+
+// Center text
+int textX = (canvasWidth - ttfWidth) / 2;
+int textY = (canvasHeight - ttfHeight) / 2;
+```
+
+**Auto-size Button to Text:**
+
+```cpp
+auto button = Button(ButtonConfig(0, 0, 100, 40, "Submit"));
+button->autoSizeToContent(16);  // 16px padding
+
+// Manual calculation
+int textWidth = ButtonWidget::calculateTextWidth("Submit", 2);
+int textHeight = ButtonWidget::calculateTextHeight(2);
+int buttonWidth = textWidth + 32;  // 16px padding each side
+int buttonHeight = textHeight + 16;  // 8px padding top/bottom
+```
+
+## Font Rendering Methods
+
+### TextWidget (Recommended)
+
+Use `TextWidget` for declarative text:
+
+```cpp
+auto text = Text(
+    TextConfig(100, 50, "Hello")
+        .style(TextStyle()
+            .useTTFFont("roboto")
+            .fontSize(20)
+            .color(Colors::White)
+        )
+);
+```
+
+### Direct Rendering
+
+Render text directly to canvas:
+
+```cpp
+void draw() {
+    auto canvas = Fern::Canvas::getInstance();
+    
+    // Bitmap font
+    Fern::Font::renderBitmap(
+        canvas,
+        "Bitmap Text",
+        100, 50,  // Position
+        2,        // Size
+        Fern::Colors::White
+    );
+    
+    // TTF font
+    Fern::Font::renderTTF(
+        canvas,
+        "TTF Text",
+        100, 80,     // Position
+        20,          // Size
+        Fern::Colors::Cyan,
+        "arial"      // Font name (optional)
+    );
+}
+```
+
+### Unified Rendering
+
+```cpp
+Fern::Font::renderText(
+    canvas,
+    "Text",
+    x, y,
+    size,
+    color,
+    Fern::FontType::TTF  // or FontType::Bitmap
+);
+```
+
+## Font Styles and Effects
+
+### Text Alignment
+
+```cpp
+TextStyle style;
+style.alignment(0);  // Left align
+style.alignment(1);  // Center align
+style.alignment(2);  // Right align
+
+auto centered = Text(
+    TextConfig(canvasWidth / 2, 50, "Centered")
+        .style(TextStyle().alignment(1).fontSize(3))
+);
+```
+
+### Text with Background
+
+```cpp
+TextStyle style;
+style.backgroundColor(Colors::DarkGray)
+     .padding(10)
+     .color(Colors::White);
+
+auto labeledText = Text(
+    TextConfig(100, 50, "Label").style(style)
+);
+```
+
+### Text with Shadow
+
+```cpp
+TextStyle style;
+style.shadow(true, Colors::Black, 2)  // Enabled, color, offset
+     .color(Colors::White)
+     .fontSize(4);
+
+auto shadowText = Text(
+    TextConfig(100, 50, "Shadow").style(style)
+);
+```
+
+## Choosing the Right Font
+
+<Tabs>
+  <Tab title="Bitmap Fonts">
+    **Best For:**
+    - Retro/pixel art games
+    - Small UI elements
+    - Consistent pixel-perfect rendering
+    - Low-res displays
+    
+    **Pros:**
+    - Built-in, no loading required
+    - Perfect for pixel art aesthetic
+    - Lightweight
+    
+    **Cons:**
+    - Limited to small sizes
+    - Pixelated at large scales
+    - No font variety
+  </Tab>
+  
+  <Tab title="TTF Fonts">
+    **Best For:**
+    - Modern UIs
+    - Large text (headings, titles)
+    - Professional applications
+    - High-DPI displays
+    
+    **Pros:**
+    - Smooth at any size
+    - Font variety
+    - Professional appearance
+    
+    **Cons:**
+    - Requires font files
+    - Slightly more overhead
+    - Font licensing considerations
+  </Tab>
+</Tabs>
+
+## Example: Mixed Font Usage
+
+```cpp
+using namespace Fern;
+
+void setupUI() {
+    // Load TTF fonts
+    TTF::load("roboto", "fonts/Roboto-Regular.ttf");
+    TTF::load("roboto-bold", "fonts/Roboto-Bold.ttf");
+    TTF::setDefault("roboto");
+    
+    // Large TTF title
+    auto title = Text(
+        TextConfig(0, 0, "Welcome")
+            .style(TextStyle()
+                .useTTFFont("roboto-bold")
+                .fontSize(32)
+                .color(Colors::White)
+                .alignment(1)
+            )
+    );
+    
+    // Medium TTF subtitle
+    auto subtitle = Text(
+        TextConfig(0, 0, "To Fern Framework")
+            .style(TextStyle()
+                .useTTFFont("roboto")
+                .fontSize(18)
+                .color(Colors::LightGray)
+                .alignment(1)
+            )
+    );
+    
+    // Bitmap font for UI labels (retro style)
+    auto label = Text(
+        TextConfig(0, 0, "Score: 9999")
+            .style(TextStyle()
+                .useBitmapFont()
+                .fontSize(2)
+                .color(Colors::Yellow)
+            )
+    );
+    
+    // Layout
+    auto layout = Column({
+        SizedBox(0, 40),
+        title,
+        SizedBox(0, 10),
+        subtitle,
+        SizedBox(0, 30),
+        label
+    }, false, MainAxisAlignment::Center, CrossAxisAlignment::Center);
+    
+    addWidget(Center(layout));
+}
+```
+
+## Font Loading Best Practices
+
+<Steps>
+
+### Load Fonts Early
+
+Load all fonts during initialization:
+
+```cpp
+int main() {
+    Fern::initialize();
+    loadFonts();  // Load fonts first
+    setupUI();    // Then create UI
+    Fern::startRenderLoop();
+}
+```
+
+### Check Font Loading
+
+Verify fonts loaded successfully:
+
+```cpp
+bool loadFonts() {
+    if (!Fern::Font::loadTTFFont("roboto", "fonts/Roboto.ttf")) {
+        std::cerr << "Failed to load Roboto font!" << std::endl;
+        return false;
+    }
+    
+    if (!Fern::Font::hasTTFFont()) {
+        std::cerr << "No TTF fonts available!" << std::endl;
+        return false;
+    }
+    
+    return true;
+}
+```
+
+### Provide Fallbacks
+
+Fall back to bitmap fonts if TTF loading fails:
+
+```cpp
+TextStyle createTextStyle(int size) {
+    TextStyle style;
+    
+    if (Fern::Font::hasTTFFont()) {
+        style.useTTFFont().fontSize(size);
+    } else {
+        style.useBitmapFont().fontSize(size / 8);  // Approximate conversion
+    }
+    
+    return style;
+}
+```
+
+</Steps>
+
+<Note>
+TTF font loading requires valid .ttf files. Make sure font paths are correct and files are readable.
+</Note>
+
+## Next Steps
+
+- Learn about [Styling](/guides/styling) for colors and effects
+- Explore [Creating Widgets](/guides/creating-widgets) for custom text rendering
+- See [Layouts](/guides/layouts) for text positioning

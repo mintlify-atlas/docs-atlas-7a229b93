@@ -1,0 +1,383 @@
+---
+title: CircularIndicatorWidget
+description: Circular progress indicators for visualizing completion
+---
+
+CircularIndicatorWidget displays circular progress indicators with customizable arc direction, thickness, and appearance.
+
+## Basic Usage
+
+```cpp
+#include <fern/fern.hpp>
+
+using namespace Fern;
+
+auto indicator = CircularIndicator(CircularIndicatorConfig(100, 100, 50)
+    .value(75.0f)
+    .range(0.0f, 100.0f));
+
+indicator->onValueChanged.connect([](float value) {
+    std::cout << "Progress: " << value << "%" << std::endl;
+});
+```
+
+## Constructor
+
+<ParamField path="config" type="CircularIndicatorConfig">
+  Configuration object containing position, radius, value range, and style
+</ParamField>
+
+## CircularIndicatorConfig
+
+Configure circular indicator properties:
+
+```cpp
+CircularIndicatorConfig(int x, int y, int radius = 50)
+```
+
+### Configuration Methods
+
+```cpp
+CircularIndicatorConfig& range(float minValue, float maxValue)  // Set value range
+CircularIndicatorConfig& value(float value)                     // Set current value
+CircularIndicatorConfig& radius(int r)                          // Set radius
+CircularIndicatorConfig& style(const CircularIndicatorStyle& s) // Set style
+```
+
+## CircularIndicatorStyle
+
+Customize circular indicator appearance:
+
+### Color Methods
+
+```cpp
+CircularIndicatorStyle& backgroundColor(uint32_t color)   // Background arc color
+CircularIndicatorStyle& fillColor(uint32_t color)        // Progress arc color
+CircularIndicatorStyle& borderColor(uint32_t color)      // Border color
+CircularIndicatorStyle& textColor(uint32_t color)        // Percentage text color
+```
+
+### Arc Configuration
+
+```cpp
+CircularIndicatorStyle& thickness(int thick)             // Arc thickness in pixels
+CircularIndicatorStyle& clockwise(bool cw)               // Direction of progress
+CircularIndicatorStyle& startAngle(float angle)          // Starting angle in degrees
+```
+
+### Display Methods
+
+```cpp
+CircularIndicatorStyle& borderWidth(int width)
+CircularIndicatorStyle& showPercentage(bool show)        // Show percentage text
+CircularIndicatorStyle& fontSize(int size)
+CircularIndicatorStyle& useBitmapFont()
+CircularIndicatorStyle& useTTFFont(const std::string& fontName)
+```
+
+## Signals
+
+<ParamField path="onValueChanged" type="Signal<float>">
+  Emitted when the progress value changes
+</ParamField>
+
+<ParamField path="onComplete" type="Signal<>">
+  Emitted when progress reaches 100%
+</ParamField>
+
+## Methods
+
+### Value Management
+
+```cpp
+void setValue(float value)
+float getValue() const
+void setRange(float minValue, float maxValue)
+float getPercentage() const
+```
+
+## Examples
+
+### Basic Circular Indicator
+
+```cpp
+auto indicator = CircularIndicator(CircularIndicatorConfig(100, 100, 40)
+    .value(75.0f)
+    .range(0.0f, 100.0f));
+
+indicator->onValueChanged.connect([](float value) {
+    std::cout << "Progress: " << value << "%" << std::endl;
+});
+```
+
+### Loading Indicator
+
+```cpp
+auto loading = CircularIndicator(CircularIndicatorConfig(150, 150, 35)
+    .value(60.0f)
+    .range(0.0f, 100.0f)
+    .style(CircularIndicatorStyle()
+        .backgroundColor(Colors::DarkGray)
+        .fillColor(Colors::Blue)
+        .thickness(8)
+        .showPercentage(true)
+        .startAngle(-90)));
+
+loading->onComplete.connect([]() {
+    std::cout << "Loading completed!" << std::endl;
+});
+```
+
+### Custom Styled Indicator
+
+```cpp
+auto indicator = CircularIndicator(CircularIndicatorConfig(100, 100, 50)
+    .value(45.0f)
+    .range(0.0f, 100.0f)
+    .style(CircularIndicatorStyle()
+        .backgroundColor(0xFF2C3E50)    // Dark blue-gray
+        .fillColor(0xFF3498DB)          // Bright blue
+        .borderColor(0xFF34495E)        // Darker border
+        .borderWidth(3)
+        .thickness(10)
+        .showPercentage(true)
+        .textColor(0xFFFFFFFF)
+        .fontSize(2)
+        .clockwise(true)
+        .startAngle(-90.0f)));
+```
+
+### Counter-Clockwise Indicator
+
+```cpp
+auto ccwIndicator = CircularIndicator(CircularIndicatorConfig(100, 100, 35)
+    .value(60.0f)
+    .range(0.0f, 100.0f)
+    .style(CircularIndicatorStyle()
+        .fillColor(Colors::Red)
+        .clockwise(false)               // Counter-clockwise
+        .startAngle(-90.0f)));
+```
+
+### System Resource Monitoring
+
+```cpp
+auto cpuIndicator = CircularIndicator(CircularIndicatorConfig(100, 100, 30)
+    .value(45.0f)
+    .range(0.0f, 100.0f)
+    .style(CircularIndicatorStyle()
+        .backgroundColor(Colors::DarkGray)
+        .fillColor(Colors::Blue)
+        .thickness(6)
+        .showPercentage(true)
+        .fontSize(1)));
+
+auto memoryIndicator = CircularIndicator(CircularIndicatorConfig(200, 100, 30)
+    .value(67.0f)
+    .range(0.0f, 100.0f)
+    .style(CircularIndicatorStyle()
+        .backgroundColor(Colors::DarkGray)
+        .fillColor(Colors::Orange)
+        .thickness(6)
+        .showPercentage(true)
+        .fontSize(1)));
+
+auto diskIndicator = CircularIndicator(CircularIndicatorConfig(300, 100, 30)
+    .value(32.0f)
+    .range(0.0f, 100.0f)
+    .style(CircularIndicatorStyle()
+        .backgroundColor(Colors::DarkGray)
+        .fillColor(Colors::Green)
+        .thickness(6)
+        .showPercentage(true)
+        .fontSize(1)));
+```
+
+### Battery Level Indicator
+
+```cpp
+auto battery = CircularIndicator(CircularIndicatorConfig(100, 100, 25)
+    .value(65.0f)
+    .range(0.0f, 100.0f)
+    .style(CircularIndicatorStyle()
+        .fillColor(Colors::Green)));
+
+battery->onValueChanged.connect([](float level) {
+    if (level < 20.0f) {
+        std::cout << "Battery low: " << level << "%" << std::endl;
+    }
+});
+```
+
+### Experience/Level Indicator
+
+```cpp
+auto xpIndicator = CircularIndicator(CircularIndicatorConfig(100, 100, 45)
+    .value(75.0f)
+    .range(0.0f, 100.0f)
+    .style(CircularIndicatorStyle()
+        .backgroundColor(0xFF4A4A4A)    // Dark gray
+        .fillColor(0xFFFFD700)          // Gold
+        .borderColor(0xFF8B4513)        // Brown
+        .borderWidth(2)
+        .thickness(8)
+        .showPercentage(true)));
+
+xpIndicator->onComplete.connect([]() {
+    std::cout << "Level up!" << std::endl;
+});
+```
+
+### Skill Indicators
+
+```cpp
+std::vector<std::string> skills = {"Strength", "Agility", "Intelligence", "Wisdom"};
+std::vector<float> skillValues = {72.0f, 58.0f, 91.0f, 45.0f};
+std::vector<uint32_t> skillColors = {
+    Colors::Red,
+    Colors::Green,
+    Colors::Blue,
+    Colors::Purple
+};
+
+for (int i = 0; i < skills.size(); ++i) {
+    auto skill = CircularIndicator(CircularIndicatorConfig(100 + i * 80, 100, 25)
+        .value(skillValues[i])
+        .range(0.0f, 100.0f)
+        .style(CircularIndicatorStyle()
+            .fillColor(skillColors[i])
+            .thickness(4)
+            .showPercentage(true)
+            .fontSize(1)));
+    
+    skill->onValueChanged.connect([skills, i](float value) {
+        std::cout << skills[i] << ": " << value << "%" << std::endl;
+    });
+}
+```
+
+### Status Indicators
+
+```cpp
+// Success (100%)
+auto success = CircularIndicator(CircularIndicatorConfig(100, 100, 25)
+    .value(100.0f)
+    .range(0.0f, 100.0f)
+    .style(CircularIndicatorStyle()
+        .fillColor(Colors::Green)
+        .showPercentage(false)));
+
+// Warning (60%)
+auto warning = CircularIndicator(CircularIndicatorConfig(150, 100, 25)
+    .value(60.0f)
+    .range(0.0f, 100.0f)
+    .style(CircularIndicatorStyle()
+        .fillColor(Colors::Yellow)
+        .showPercentage(false)));
+
+// Error (25%)
+auto error = CircularIndicator(CircularIndicatorConfig(200, 100, 25)
+    .value(25.0f)
+    .range(0.0f, 100.0f)
+    .style(CircularIndicatorStyle()
+        .fillColor(Colors::Red)
+        .showPercentage(false)));
+```
+
+## Circular Indicator Presets
+
+The `CircularIndicatorPresets` namespace provides common configurations:
+
+```cpp
+// Default circular indicator
+auto default = CircularIndicator(CircularIndicatorPresets::Default(100, 100));
+
+// Loading indicator
+auto loading = CircularIndicator(CircularIndicatorPresets::Loading(100, 100, 40));
+
+// Health indicator
+auto health = CircularIndicator(CircularIndicatorPresets::Health(100, 100, 30));
+
+// Battery indicator
+auto battery = CircularIndicator(CircularIndicatorPresets::Battery(100, 100, 25));
+```
+
+## Complete Example
+
+From `examples/cpp/new/circular_indicator_widget_example.cpp`:
+
+```cpp
+#include <fern/fern.hpp>
+
+using namespace Fern;
+
+void setupUI() {
+    auto loadingIndicator = CircularIndicator(
+        CircularIndicatorPresets::Loading(100, 100, 35));
+    
+    loadingIndicator->setValue(60.0f);
+    
+    loadingIndicator->onValueChanged.connect([](float progress) {
+        std::cout << "Loading: " << progress << "%" << std::endl;
+    });
+    
+    loadingIndicator->onComplete.connect([]() {
+        std::cout << "Loading completed!" << std::endl;
+    });
+    
+    auto batteryIndicator = CircularIndicator(
+        CircularIndicatorPresets::Battery(250, 100, 25));
+    
+    batteryIndicator->setValue(65.0f);
+    
+    batteryIndicator->onValueChanged.connect([](float level) {
+        if (level < 20.0f) {
+            std::cout << "Battery low: " << level << "%" << std::endl;
+        }
+    });
+}
+```
+
+## Animating Progress
+
+```cpp
+static std::shared_ptr<CircularIndicatorWidget> indicator;
+static float progress = 0.0f;
+
+void setupUI() {
+    indicator = CircularIndicator(CircularIndicatorConfig(200, 200, 60)
+        .value(0.0f));
+}
+
+void draw() {
+    Draw::fill(Colors::DarkBlue);
+    
+    // Update progress
+    progress += 0.5f;
+    if (progress > 100.0f) progress = 0.0f;
+    
+    indicator->setValue(progress);
+}
+```
+
+## Start Angle Reference
+
+- `-90°` or `270°` - Top (12 o'clock)
+- `0°` - Right (3 o'clock)
+- `90°` - Bottom (6 o'clock)
+- `180°` - Left (9 o'clock)
+
+## Use Cases
+
+- **Loading indicators** - Application or content loading
+- **System monitoring** - CPU, memory, disk, network usage
+- **Game mechanics** - Health, mana, experience
+- **Battery indicators** - Device battery level
+- **Skill displays** - Character attributes, skill levels
+- **Status indicators** - Compact success/warning/error states
+
+## See Also
+
+- [ProgressBarWidget](/widgets/progress-bar) - For horizontal progress
+- [CircleWidget](/widgets/circle) - For simple filled circles
+- [SliderWidget](/widgets/slider) - For interactive value selection

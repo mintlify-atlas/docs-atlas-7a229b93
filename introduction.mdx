@@ -1,0 +1,154 @@
+---
+title: "Fern UI Framework"
+description: "A fast, minimal, cross-platform UI toolkit written in C++ with modern design principles"
+---
+
+<img src="/assets/logo.png" alt="Fern Graphics Logo" width="200" />
+
+# Welcome to Fern UI Framework
+
+A fast, minimal, cross-platform UI toolkit written in C++ with modern design principles. Build beautiful desktop applications with a comprehensive widget system, flexible layout management, and seamless cross-platform rendering capabilities.
+
+<CardGroup cols={2}>
+  <Card title="Quick Start" icon="rocket" href="/quickstart">
+    Create your first Fern app in minutes with our interactive tutorial
+  </Card>
+  <Card title="Installation" icon="download" href="/installation">
+    Install Fern on Linux, macOS, or Windows with complete CLI setup
+  </Card>
+  <Card title="Widget System" icon="grid" href="/widgets/overview">
+    Explore buttons, text inputs, layouts, and advanced components
+  </Card>
+  <Card title="Core Concepts" icon="book" href="/core/architecture">
+    Understand Fern's architecture and design principles
+  </Card>
+</CardGroup>
+
+## Key Features
+
+<CardGroup cols={3}>
+  <Card title="Comprehensive Widgets" icon="cube">
+    Buttons, text inputs, shapes, sliders, progress bars, dropdowns, and custom components
+  </Card>
+  <Card title="Flexible Layouts" icon="table-cells">
+    Row, Column, Padding, Center, Expanded, SizedBox for responsive design
+  </Card>
+  <Card title="Cross-Platform" icon="window">
+    Linux (X11/Wayland), Web (WebAssembly), with Windows and macOS support planned
+  </Card>
+  <Card title="Font Rendering" icon="font">
+    TTF font support with customizable text styling and alignment
+  </Card>
+  <Card title="Event System" icon="bolt">
+    Signal-slot reactive programming for handling user interactions
+  </Card>
+  <Card title="Minimal Dependencies" icon="feather">
+    Memory-efficient design with modern C++17 and clean APIs
+  </Card>
+</CardGroup>
+
+## Why Fern?
+
+Fern emphasizes **simplicity** and **performance** while providing powerful tools for building rich graphical interfaces:
+
+- **Modern C++17**: Clean APIs with both C++ and C bindings
+- **Declarative UI**: Build interfaces with intuitive widget composition
+- **Fast Rendering**: Efficient canvas-based drawing with platform-optimized backends
+- **Developer-Friendly**: Comprehensive documentation and examples to get you started
+
+## Quick Example
+
+Here's a simple "Hello World" app with Fern:
+
+```cpp
+#include <fern/fern.hpp>
+
+using namespace Fern;
+
+void setupUI() {
+    int width = Fern::getWidth();
+    int height = Fern::getHeight();
+    
+    auto centerWidget = std::make_shared<CenterWidget>(0, 0, width, height);
+    centerWidget->add(Text(Point(0, 0), "Hello, Fern!", 3, Colors::White));
+    
+    addWidget(centerWidget);
+}
+
+void draw() {
+    Draw::fill(Colors::DarkBlue);
+}
+
+int main() {
+    Fern::initialize();
+    setupUI();
+    Fern::setDrawCallback(draw);
+    Fern::startRenderLoop();
+    return 0;
+}
+```
+
+## Architecture Overview
+
+Fern is built around several core subsystems:
+
+### Widget System
+Hierarchical component architecture with built-in widgets (Text, Button, Shapes) and custom widget support.
+
+### Layout Engine
+Flexible positioning and sizing with containers (Row, Column, Center) and constraint-based layouts.
+
+### Rendering Pipeline
+Platform-abstracted graphics with efficient drawing operations, supporting Linux (X11) and Web (WebGL2).
+
+### Event System
+Signal-slot based event handling for clicks, hovers, and user interactions.
+
+### Font Management
+TTF font loading with customizable text rendering, alignment, shadows, and backgrounds.
+
+## Getting Started
+
+<Steps>
+  <Step title="Install Fern">
+    Follow our [installation guide](/installation) to set up the CLI and C++ library
+  </Step>
+  <Step title="Create Your First App">
+    Build a simple counter app with our [quickstart tutorial](/quickstart)
+  </Step>
+  <Step title="Explore Widgets">
+    Learn about available widgets and layout components in the widget documentation
+  </Step>
+  <Step title="Deploy Cross-Platform">
+    Compile for Linux desktop or deploy to the web with WebAssembly
+  </Step>
+</Steps>
+
+## Requirements
+
+- **C++17** or later
+- **CMake 3.10+**
+- **Platform-specific libraries**:
+  - Linux: X11, fontconfig, freetype2
+  - Web: Emscripten
+  - macOS: Cocoa framework (planned)
+  - Windows: Native Windows APIs (planned)
+
+## Community & Support
+
+<CardGroup cols={2}>
+  <Card title="GitHub Repository" icon="github" href="https://github.com/fernkit/fern">
+    View source code, report issues, and contribute
+  </Card>
+  <Card title="CLI Reference" icon="terminal" href="/cli/overview">
+    Command-line tools for building and managing Fern projects
+  </Card>
+</CardGroup>
+
+<Note>
+Fern is currently in **beta** status. APIs may change as we work toward a stable 1.0 release.
+</Note>
+
+## License
+
+Fern Graphics is released under the MIT License. See the [LICENSE](https://github.com/fernkit/fern/blob/main/LICENCE) file for complete terms.

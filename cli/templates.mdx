@@ -1,0 +1,432 @@
+---
+title: templates
+description: Manage and use Fern project templates
+---
+
+The `templates` command manages project templates, allowing you to create new projects from pre-configured templates or install community templates.
+
+## Usage
+
+```bash
+fern templates <command> [options]
+```
+
+## Commands
+
+### list
+
+List all available templates:
+
+```bash
+fern templates list
+```
+
+<CodeGroup>
+```bash Output
+Available Templates
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Installed templates:
+  📦 game
+  📦 dashboard
+
+Official templates:
+  📦 basic      - Basic Fern application
+  📦 game       - Game development template
+  📦 dashboard  - Dashboard/admin template
+  📦 mobile     - Mobile-style UI template
+```
+</CodeGroup>
+
+### install
+
+Install a template from a name or URL:
+
+```bash
+fern templates install <template_name_or_url>
+```
+
+<ParamField path="template_name_or_url" type="string" required>
+  Official template name or Git repository URL
+</ParamField>
+
+Examples:
+
+```bash
+# Install official template
+fern templates install game
+
+# Install from GitHub URL
+fern templates install https://github.com/user/fern-template
+```
+
+### create
+
+Create a new project from a template:
+
+```bash
+fern templates create <template_name> <project_name>
+```
+
+<ParamField path="template_name" type="string" required>
+  Name of installed template
+</ParamField>
+
+<ParamField path="project_name" type="string" required>
+  Name for the new project
+</ParamField>
+
+Example:
+
+```bash
+fern templates create game my_game
+cd my_game
+fern fire
+```
+
+## Official Templates
+
+### basic
+
+Simple Fern application template with minimal setup:
+
+```bash
+fern templates install basic
+fern templates create basic my_app
+```
+
+Features:
+- Clean starter code
+- Basic rendering setup
+- Minimal dependencies
+- Good for learning
+
+### game
+
+Game development template with player movement and input:
+
+```bash
+fern templates install game
+fern templates create game my_game
+```
+
+<CodeGroup>
+```bash Output
+Creating 'my_game' from template 'game'
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Project 'my_game' created from template 'game'!
+cd my_game
+fern fire
+```
+</CodeGroup>
+
+Features:
+- Player entity with keyboard controls
+- Game loop with update/draw separation
+- Input handling example
+- Sprite rendering
+
+Starter code:
+```cpp
+#include <fern/fern.hpp>
+#include <iostream>
+#include <cmath>
+
+using namespace Fern;
+
+// Game state
+struct Player {
+    float x = 400;
+    float y = 300;
+    float speed = 200;
+};
+
+Player player;
+
+void update(float deltaTime) {
+    // Simple player movement
+    if (Input::isKeyPressed(KeyCode::Left)) {
+        player.x -= player.speed * deltaTime;
+    }
+    if (Input::isKeyPressed(KeyCode::Right)) {
+        player.x += player.speed * deltaTime;
+    }
+    if (Input::isKeyPressed(KeyCode::Up)) {
+        player.y -= player.speed * deltaTime;
+    }
+    if (Input::isKeyPressed(KeyCode::Down)) {
+        player.y += player.speed * deltaTime;
+    }
+}
+
+void draw() {
+    Draw::fill(Colors::DarkBlue);
+    Draw::circle(player.x, player.y, 20, Colors::Yellow);
+    DrawText::drawText("Use arrow keys to move", 10, 10, 1, Colors::White);
+}
+
+int main() {
+    std::cout << "🎮 Starting Fern Game..." << std::endl;
+    
+    Fern::initialize();
+    Fern::setUpdateCallback(update);
+    Fern::setDrawCallback(draw);
+    Fern::startRenderLoop();
+    
+    return 0;
+}
+```
+
+### dashboard
+
+Dashboard and admin UI template:
+
+```bash
+fern templates install dashboard
+fern templates create dashboard admin_panel
+```
+
+Features:
+- Panel layout system
+- Chart/graph examples
+- Navigation components
+- Data visualization ready
+
+### mobile
+
+Mobile-style interface template:
+
+```bash
+fern templates install mobile
+fern templates create mobile my_app
+```
+
+Features:
+- Touch-friendly UI
+- Responsive layout
+- Mobile navigation patterns
+- Gesture support
+
+## Installing Custom Templates
+
+### From Git URL
+
+```bash
+fern templates install https://github.com/username/fern-template-custom
+```
+
+This clones the repository to `~/.fern/templates/fern-template-custom`.
+
+### Template Structure
+
+Custom templates should have this structure:
+
+```
+my-template/
+├── lib/
+│   └── main.cpp
+├── assets/
+├── template.yaml    # Optional metadata
+└── README.md
+```
+
+### Template Metadata
+
+Optional `template.yaml`:
+
+```yaml
+name: My Custom Template
+description: A custom Fern project template
+author: Your Name
+version: 1.0.0
+tags:
+  - game
+  - multiplayer
+features:
+  - Networking support
+  - Custom physics
+  - Save/load system
+```
+
+## Template Locations
+
+Templates are stored in:
+
+```
+~/.fern/templates/
+├── basic/
+├── game/
+├── dashboard/
+└── custom-template/
+```
+
+## Examples
+
+### Create Game from Template
+
+```bash
+# Install the game template
+fern templates install game
+
+# Create a new game project
+fern templates create game space_shooter
+
+# Navigate and run
+cd space_shooter
+fern fire
+```
+
+### Use Custom Template
+
+```bash
+# Install custom template from GitHub
+fern templates install https://github.com/ferncommunity/platformer-template
+
+# Create project from it
+fern templates create platformer-template my_platformer
+
+# Run it
+cd my_platformer
+fern fire
+```
+
+### List and Install
+
+```bash
+# See what's available
+fern templates list
+
+# Install what you need
+fern templates install dashboard
+fern templates install mobile
+
+# List again to confirm
+fern templates list
+```
+
+## Workflow
+
+<Steps>
+  <Step title="Browse templates">
+    ```bash
+    fern templates list
+    ```
+  </Step>
+  
+  <Step title="Install template">
+    ```bash
+    fern templates install game
+    ```
+  </Step>
+  
+  <Step title="Create project">
+    ```bash
+    fern templates create game my_game
+    ```
+  </Step>
+  
+  <Step title="Start developing">
+    ```bash
+    cd my_game
+    fern fire
+    ```
+  </Step>
+</Steps>
+
+## Creating Your Own Template
+
+To create a template others can use:
+
+<Steps>
+  <Step title="Create template project">
+    ```bash
+    fern sprout my-template
+    cd my-template
+    ```
+  </Step>
+  
+  <Step title="Customize code">
+    Edit `lib/main.cpp` and add your template code, assets, and structure.
+  </Step>
+  
+  <Step title="Add metadata">
+    Create `template.yaml`:
+    ```yaml
+    name: My Template
+    description: Description of what it does
+    author: Your Name
+    version: 1.0.0
+    ```
+  </Step>
+  
+  <Step title="Publish to Git">
+    ```bash
+    git init
+    git add .
+    git commit -m "Initial template"
+    git remote add origin https://github.com/you/fern-template-name
+    git push -u origin main
+    ```
+  </Step>
+  
+  <Step title="Share with others">
+    Others can install it:
+    ```bash
+    fern templates install https://github.com/you/fern-template-name
+    ```
+  </Step>
+</Steps>
+
+## Common Issues
+
+<AccordionGroup>
+  <Accordion title="Template not found">
+    ```bash
+    fern templates create game my_game
+    # Error: Template 'game' not found
+    ```
+    
+    Solution: Install the template first:
+    ```bash
+    fern templates install game
+    fern templates create game my_game
+    ```
+  </Accordion>
+  
+  <Accordion title="Project already exists">
+    ```bash
+    fern templates create game my_game
+    # Error: Directory 'my_game' already exists
+    ```
+    
+    Solution: Choose a different name or remove the existing directory.
+  </Accordion>
+  
+  <Accordion title="Git clone failed">
+    When installing from URL:
+    ```bash
+    fern templates install https://github.com/invalid/repo
+    # Error: Failed to clone template
+    ```
+    
+    Solution: Verify the URL is correct and you have internet access.
+  </Accordion>
+</AccordionGroup>
+
+## Template vs Sprout
+
+| Feature | `fern sprout` | `fern templates create` |
+|---------|---------------|-------------------------|
+| Code | Basic starter | Template-specific |
+| Setup | Minimal | Pre-configured |
+| Use Case | Blank slate | Specific project type |
+| Customization | Full freedom | Template starting point |
+
+Use `sprout` for general projects, `templates` for specific project types.
+
+## Related Commands
+
+- [`fern sprout`](/cli/sprout) - Create basic projects
+- [`fern fire`](/cli/fire) - Run template-created projects
+- [`fern install`](/cli/install) - Add packages to template projects

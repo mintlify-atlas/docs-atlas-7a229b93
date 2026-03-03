@@ -1,0 +1,230 @@
+---
+title: CircleWidget
+description: Circular shapes with click and hover support
+---
+
+CircleWidget represents filled circles that can respond to mouse events with hover effects and click handling through signals.
+
+## Basic Usage
+
+```cpp
+#include <fern/fern.hpp>
+
+using namespace Fern;
+
+auto circle = Circle(30, Point(100, 100), Colors::Red);
+circle->onClick.connect([]() {
+    std::cout << "Circle clicked!" << std::endl;
+});
+```
+
+## Constructor
+
+<ParamField path="radius" type="int">
+  The radius of the circle in pixels
+</ParamField>
+
+<ParamField path="position" type="Point">
+  The center position of the circle (x, y coordinates)
+</ParamField>
+
+<ParamField path="color" type="uint32_t">
+  The fill color in ARGB format
+</ParamField>
+
+<ParamField path="addToManager" type="bool" default="true">
+  Whether to automatically add to widget manager
+</ParamField>
+
+## Signals
+
+<ParamField path="onClick" type="Signal<>">
+  Emitted when the circle is clicked
+</ParamField>
+
+<ParamField path="onHover" type="Signal<bool>">
+  Emitted when hover state changes (true = hovering, false = not hovering)
+</ParamField>
+
+## Methods
+
+### Appearance
+
+```cpp
+void setRadius(int radius)
+int getRadius() const
+
+void setColor(uint32_t color)
+uint32_t getColor() const
+```
+
+### Position
+
+```cpp
+void setPosition(const Point& position)
+Point getPosition() const
+
+int getWidth() const   // Returns diameter (radius * 2)
+int getHeight() const  // Returns diameter (radius * 2)
+```
+
+## Examples
+
+### Basic Circle
+
+```cpp
+auto circle = Circle(25, Point(200, 150), Colors::Blue);
+```
+
+### Interactive Circle
+
+```cpp
+auto circle = Circle(40, Point(150, 200), Colors::Purple);
+
+circle->onHover.connect([circle](bool isHovered) {
+    if (isHovered) {
+        circle->setColor(Colors::Magenta);
+    } else {
+        circle->setColor(Colors::Purple);
+    }
+});
+
+circle->onClick.connect([]() {
+    std::cout << "Circle clicked!" << std::endl;
+});
+```
+
+### Status Indicators
+
+```cpp
+auto onlineStatus = Circle(12, Point(50, 100), Colors::Green);
+auto offlineStatus = Circle(12, Point(100, 100), Colors::Red);
+auto pendingStatus = Circle(12, Point(150, 100), Colors::Yellow);
+```
+
+### Progress Dots
+
+```cpp
+std::vector<std::shared_ptr<CircleWidget>> progressDots;
+
+for (int i = 0; i < 5; ++i) {
+    auto dot = Circle(10, Point(50 + i * 30, 100), Colors::Gray);
+    progressDots.push_back(dot);
+}
+
+// Mark first 3 as completed
+for (int i = 0; i < 3; ++i) {
+    progressDots[i]->setColor(Colors::Green);
+}
+```
+
+### Color Picker Circles
+
+```cpp
+std::vector<uint32_t> colors = {
+    Colors::Red, Colors::Green, Colors::Blue,
+    Colors::Yellow, Colors::Magenta, Colors::Cyan
+};
+
+for (int i = 0; i < colors.size(); ++i) {
+    int x = 50 + (i % 3) * 60;
+    int y = 100 + (i / 3) * 60;
+    
+    auto colorCircle = Circle(20, Point(x, y), colors[i]);
+    
+    colorCircle->onClick.connect([colors, i]() {
+        std::cout << "Selected color: 0x" << std::hex << colors[i] << std::endl;
+    });
+    
+    colorCircle->onHover.connect([colorCircle](bool isHovered) {
+        colorCircle->setRadius(isHovered ? 25 : 20);
+    });
+}
+```
+
+### Navigation Dots
+
+```cpp
+std::vector<std::shared_ptr<CircleWidget>> navDots;
+
+for (int i = 0; i < 5; ++i) {
+    auto dot = Circle(8, Point(100 + i * 25, 300), Colors::Gray);
+    navDots.push_back(dot);
+    
+    if (i == 0) {
+        dot->setColor(Colors::Blue); // Active page
+    }
+    
+    dot->onClick.connect([navDots, i]() {
+        // Reset all to inactive
+        for (auto& navDot : navDots) {
+            navDot->setColor(Colors::Gray);
+        }
+        // Set clicked as active
+        navDots[i]->setColor(Colors::Blue);
+    });
+}
+```
+
+### Button-like Circles
+
+```cpp
+auto playButton = Circle(25, Point(100, 150), Colors::Green);
+auto pauseButton = Circle(25, Point(150, 150), Colors::Yellow);
+auto stopButton = Circle(25, Point(200, 150), Colors::Red);
+
+playButton->onClick.connect([]() {
+    std::cout << "Play" << std::endl;
+});
+
+playButton->onHover.connect([playButton](bool isHovered) {
+    playButton->setColor(isHovered ? Colors::LightGreen : Colors::Green);
+});
+```
+
+## Complete Example
+
+From `examples/cpp/new/circle_widget_example.cpp`:
+
+```cpp
+#include <fern/fern.hpp>
+
+using namespace Fern;
+
+void setupUI() {
+    // Basic circles with different sizes
+    auto smallCircle = Circle(15, Point(100, 100), Colors::Red);
+    auto mediumCircle = Circle(30, Point(200, 100), Colors::Green);
+    auto largeCircle = Circle(45, Point(320, 100), Colors::Blue);
+    
+    // Interactive circle
+    auto interactiveCircle = Circle(40, Point(150, 200), Colors::Purple);
+    
+    interactiveCircle->onHover.connect([interactiveCircle](bool isHovered) {
+        if (isHovered) {
+            interactiveCircle->setColor(Colors::Magenta);
+        } else {
+            interactiveCircle->setColor(Colors::Purple);
+        }
+    });
+    
+    interactiveCircle->onClick.connect([]() {
+        std::cout << "Interactive circle clicked!" << std::endl;
+    });
+}
+```
+
+## Use Cases
+
+- **Status indicators** - Show online/offline, active/inactive states
+- **Progress indicators** - Visualize step completion
+- **Color pickers** - Select from color palettes
+- **Navigation dots** - Indicate current page/slide
+- **Buttons** - Create circular buttons
+- **Decorative elements** - Add visual interest to UI
+
+## See Also
+
+- [LineWidget](/widgets/line) - For connecting circles or drawing shapes
+- [CircularIndicatorWidget](/widgets/circular-indicator) - For circular progress
+- [ButtonWidget](/widgets/button) - For traditional rectangular buttons

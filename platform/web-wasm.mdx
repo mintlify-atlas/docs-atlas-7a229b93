@@ -1,0 +1,379 @@
+---
+title: Web/WebAssembly
+description: Compile Fern applications to WebAssembly with Emscripten
+---
+
+Fern applications can be compiled to WebAssembly and run directly in the browser using Emscripten. The Web renderer uses HTML5 Canvas for rendering and JavaScript event listeners for input.
+
+## Prerequisites
+
+### Install Emscripten
+
+Emscripten is required to compile C++ to WebAssembly:
+
+```bash
+# Clone the Emscripten SDK
+git clone https://github.com/emscripten-core/emsdk.git
+cd emsdk
+
+# Install and activate the latest version
+./emsdk install latest
+./emsdk activate latest
+
+# Add to PATH (run this in each terminal, or add to ~/.bashrc)
+source ./emsdk_env.sh
+```
+
+Verify installation:
+
+```bash
+emcc --version
+```
+
+## Building for Web
+
+### Using the Build Script
+
+The simplest way to build for Web:
+
+```bash
+./build.sh web
+```
+
+Build a specific example:
+
+```bash
+./build.sh web platform_test
+```
+
+### Using Fern CLI (Recommended)
+
+The Fern CLI provides live development with hot reload:
+
+```bash
+./fern-cli.sh example.cpp
+```
+
+This will:
+1. Compile your C++ code to WebAssembly
+2. Start a local web server on port 8000
+3. Open your browser automatically
+4. Enable interactive recompilation (press 'r' to rebuild)
+
+<Tip>
+Use a custom port with `--port`:
+```bash
+./fern-cli.sh example.cpp --port 9000
+```
+</Tip>
+
+### Using CMake with Emscripten
+
+```bash
+mkdir build-web && cd build-web
+emcmake cmake ..
+emmake make
+```
+
+## Emscripten Compilation Flags
+
+### Build Script Flags
+
+The build script uses these Emscripten settings:
+
+```bash build.sh:196-198
+WEB_FLAGS="-std=c++17 -D__EMSCRIPTEN__ -I$SRC_DIR/include"
+WEB_SETTINGS="-s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s USE_WEBGL2=1"
+WEB_SETTINGS="$WEB_SETTINGS -s EXPORTED_FUNCTIONS='[_main]'"
+```
+
+<ParamField path="WASM" type="flag" default="1">
+  Enable WebAssembly output (instead of asm.js)
+</ParamField>
+
+<ParamField path="ALLOW_MEMORY_GROWTH" type="flag" default="1">
+  Allow the WASM heap to grow dynamically
+</ParamField>
+
+<ParamField path="USE_WEBGL2" type="flag" default="1">
+  Enable WebGL 2.0 support for future GPU rendering
+</ParamField>
+
+<ParamField path="EXPORTED_FUNCTIONS" type="array">
+  Functions to export to JavaScript (includes `_main`)
+</ParamField>
+
+### Fern CLI Flags
+
+The CLI includes additional flags for development:
+
+```bash fern-cli.sh:452-458
+emcc "$source_file" $cpp_sources -o "$dist_dir/${output_base}.html" --shell-file template.html \
+    $std_flag $include_path \
+    -s WASM=1 \
+    -s EXPORTED_RUNTIME_METHODS=['cwrap','HEAPU8'] \
+    -s ALLOW_MEMORY_GROWTH=1 \
+    -s NO_DISABLE_EXCEPTION_CATCHING \
+    --embed-file fonts
+```
+
+<ParamField path="EXPORTED_RUNTIME_METHODS" type="array">
+  Runtime methods accessible from JavaScript
+</ParamField>
+
+<ParamField path="NO_DISABLE_EXCEPTION_CATCHING" type="flag">
+  Preserve C++ exception handling in WASM
+</ParamField>
+
+<ParamField path="--embed-file" type="string">
+  Embed font files into the WASM binary
+</ParamField>
+
+### CMake Configuration
+
+CMake applies these link flags when building with Emscripten:
+
+```cmake CMakeLists.txt:56-60
+if(EMSCRIPTEN)
+    set_target_properties(fern PROPERTIES
+        COMPILE_FLAGS "-s USE_WEBGL2=1"
+        LINK_FLAGS "-s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s USE_WEBGL2=1 -s EXPORTED_FUNCTIONS='[_main]' -s EXPORTED_RUNTIME_METHODS='[ccall,cwrap]'"
+    )
+endif()
+```
+
+## Web Renderer Implementation
+
+The Web renderer (`web_renderer.cpp`) uses HTML5 Canvas and JavaScript interop.
+
+### Canvas Initialization
+
+The renderer creates or finds a canvas element:
+
+```cpp web_renderer.cpp:24-36
+EM_ASM({
+    var canvas = document.getElementById('canvas');
+    if (!canvas) {
+        canvas = document.createElement('canvas');
+        canvas.id = 'canvas';
+        document.body.appendChild(canvas);
+    }
+    canvas.width = $0;
+    canvas.height = $1;
+    canvas.fernRenderer = $2;  // Store renderer pointer
+}, width, height, this);
+```
+
+### Pixel Buffer Rendering
+
+Pixels are transferred from WASM memory to Canvas:
+
+```cpp web_renderer.cpp:41-65
+void present(uint32_t* pixelBuffer, int width, int height) override {
+    EM_ASM({
+        var canvas = document.getElementById('canvas');
+        var ctx = canvas.getContext('2d');
+        var imageData = ctx.createImageData($0, $1);
+        var data = imageData.data;
+        var buffer = $2;
+        var size = $0 * $1;
+        
+        for (var i = 0; i < size; i++) {
+            var pixel = HEAP32[buffer/4 + i];
+            var b = pixel & 0xFF;
+            var g = (pixel >> 8) & 0xFF;
+            var r = (pixel >> 16) & 0xFF;
+            var a = (pixel >> 24) & 0xFF;
+            var j = i * 4;
+            data[j + 0] = r;
+            data[j + 1] = g;
+            data[j + 2] = b;
+            data[j + 3] = a;
+        }
+        ctx.putImageData(imageData, 0, 0);
+    }, width, height, pixelBuffer);
+}
+```
+
+### Event Listeners
+
+JavaScript event listeners are set up for user input:
+
+```cpp web_renderer.cpp:155-160
+canvas.addEventListener('mousemove', function(e) {
+    var rect = canvas.getBoundingClientRect();
+    var x = Math.floor((e.clientX - rect.left) * (canvas.width / rect.width));
+    var y = Math.floor((e.clientY - rect.top) * (canvas.height / rect.height));
+    Module._webRendererMouseMove(renderer, x, y);
+});
+```
+
+### Exported C Functions
+
+C++ methods are exposed to JavaScript via extern "C" functions:
+
+```cpp platform_factory.cpp:33-43
+extern "C" {
+    EMSCRIPTEN_KEEPALIVE
+    void webRendererMouseMove(Fern::WebRenderer* renderer, int x, int y) {
+        renderer->onMouseMove(x, y);
+    }
+    
+    EMSCRIPTEN_KEEPALIVE
+    void webRendererMouseClick(Fern::WebRenderer* renderer, bool down) {
+        renderer->onMouseClick(down);
+    }
+}
+```
+
+## Running Web Applications
+
+### Using Fern CLI
+
+```bash
+./fern-cli.sh example.cpp
+```
+
+Interactive commands while the server is running:
+- `r` - Recompile and reload
+- `c` - Clear console
+- `q` - Quit server
+- `h` - Show help
+
+### Manual Server
+
+Start a simple HTTP server in the build directory:
+
+```bash
+cd build/web
+python3 -m http.server 8000
+```
+
+Then open `http://localhost:8000/example.html` in your browser.
+
+<Warning>
+You must use a web server. Opening the HTML file directly (`file://`) will not work due to CORS restrictions.
+</Warning>
+
+## Build Output
+
+Emscripten generates three files:
+
+<CodeGroup>
+```html example.html
+The main HTML file with embedded canvas
+```
+
+```js example.js
+JavaScript glue code for loading WASM
+```
+
+```wasm example.wasm
+The compiled WebAssembly binary
+```
+</CodeGroup>
+
+## Custom HTML Template
+
+The Fern CLI uses a template file for the HTML shell:
+
+```bash fern-cli.sh:463
+emcc "$source_file" ... --shell-file template.html
+```
+
+Create your own `template.html` to customize the page:
+
+```html template.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Fern Graphics Application</title>
+    <style>
+        body { margin: 0; background-color: #f0f0f0; }
+        canvas { display: block; margin: 20px auto; border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Fern Graphics</h1>
+        {{{ CANVAS }}}
+    </div>
+</body>
+</html>
+```
+
+<Note>
+The `{{{ CANVAS }}}` placeholder is replaced by Emscripten with the canvas element and loading scripts.
+</Note>
+
+## Browser Compatibility
+
+Fern WebAssembly applications require:
+
+- WebAssembly support (all modern browsers)
+- Canvas 2D API
+- ES6 JavaScript features
+
+Supported browsers:
+- Chrome 57+
+- Firefox 52+
+- Safari 11+
+- Edge 16+
+
+## Debugging Web Builds
+
+### Enable Debug Mode
+
+Build with debug flags:
+
+```bash build.sh:200-202
+if [[ "$BUILD_TYPE" == "Debug" ]]; then
+    WEB_FLAGS="$WEB_FLAGS -g -O0 -DDEBUG"
+    WEB_SETTINGS="$WEB_SETTINGS -s ASSERTIONS=1"
+fi
+```
+
+### Browser Developer Tools
+
+1. Open browser DevTools (F12)
+2. Check Console for WASM errors
+3. Use Network tab to verify file loading
+4. Source maps are enabled in debug builds
+
+## Performance Optimization
+
+### Optimize for Size
+
+```bash
+emcc example.cpp -O3 -s WASM=1 --closure 1
+```
+
+### Optimize for Speed
+
+```bash
+emcc example.cpp -O3 -s WASM=1 -s ALLOW_MEMORY_GROWTH=0
+```
+
+<Tip>
+Disabling memory growth (`ALLOW_MEMORY_GROWTH=0`) can improve performance but requires setting `-s TOTAL_MEMORY=<bytes>`.
+</Tip>
+
+## Platform Detection at Runtime
+
+```cpp
+auto renderer = Fern::createRenderer();
+std::cout << renderer->getPlatformName() << std::endl;
+// Output: "Web (Emscripten)"
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Linux Platform" icon="linux" href="/platform/linux">
+    Build native Linux applications
+  </Card>
+  <Card title="Platform Overview" icon="laptop" href="/platform/overview">
+    Understand cross-platform architecture
+  </Card>
+</CardGroup>

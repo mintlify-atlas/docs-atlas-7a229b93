@@ -1,0 +1,142 @@
+---
+title: Platform Support
+description: Cross-platform support overview for Fern UI Framework
+---
+
+The Fern UI Framework is designed to run on multiple platforms with native rendering backends. The framework uses platform detection at compile-time to select the appropriate renderer implementation.
+
+## Supported Platforms
+
+<CardGroup cols={2}>
+  <Card title="Linux" icon="linux" href="/platform/linux">
+    Production-ready support via X11
+  </Card>
+  <Card title="Web/WASM" icon="globe" href="/platform/web-wasm">
+    WebAssembly support via Emscripten
+  </Card>
+  <Card title="macOS" icon="apple" href="/platform/macos">
+    Planned support (implementation exists)
+  </Card>
+  <Card title="Windows" icon="windows" href="/platform/windows">
+    Planned support (not yet implemented)
+  </Card>
+</CardGroup>
+
+## Platform Detection
+
+Fern uses CMake preprocessor definitions to detect the target platform at compile-time:
+
+```cpp CMakeLists.txt:13-27
+if(EMSCRIPTEN)
+    set(PLATFORM_NAME "Web")
+    add_definitions(-D__EMSCRIPTEN__)
+elseif(APPLE)
+    set(PLATFORM_NAME "macOS")
+    add_definitions(-D__APPLE__)
+elseif(UNIX AND NOT APPLE)
+    set(PLATFORM_NAME "Linux")
+    add_definitions(-D__linux__)
+elseif(WIN32)
+    set(PLATFORM_NAME "Windows")
+    add_definitions(-DWIN32)
+else()
+    message(FATAL_ERROR "Unsupported platform")
+endif()
+```
+
+## Platform Renderer Factory
+
+The framework uses a factory pattern to instantiate the correct renderer based on compile-time platform detection:
+
+```cpp platform_factory.cpp:16-28
+std::unique_ptr<PlatformRenderer> createRenderer() {
+#ifdef __EMSCRIPTEN__
+    return std::make_unique<WebRenderer>();
+#elif defined(__APPLE__)
+    // Extern function defined in macos_renderer.mm
+    extern std::unique_ptr<PlatformRenderer> createMacOSRenderer();
+    return createMacOSRenderer();
+#elif defined(__linux__)
+    return std::make_unique<LinuxRenderer>();
+#else
+    #error "Only Web, macOS, and Linux platforms supported currently"
+#endif
+}
+```
+
+## Platform-Specific Source Files
+
+Each platform has its own renderer implementation:
+
+<CodeGroup>
+```bash Linux
+src/cpp/src/platform/linux_renderer.cpp
+```
+
+```bash Web/WASM
+src/cpp/src/platform/web_renderer.cpp
+```
+
+```bash macOS
+src/cpp/src/platform/macos_renderer.mm
+```
+</CodeGroup>
+
+The platform factory (`platform_factory.cpp`) conditionally includes only the relevant renderer based on compilation flags.
+
+## Build System Support
+
+Fern provides multiple build options:
+
+### CMake Build
+
+The primary build system uses CMake to detect platforms and configure compilation:
+
+```bash
+mkdir build && cd build
+cmake ..
+cmake --build .
+```
+
+### Shell Script Build
+
+For quick builds on Linux and Web, use the provided build script:
+
+```bash build.sh
+./build.sh linux          # Build for Linux
+./build.sh web            # Build for Web/WASM
+./build.sh all            # Build for all platforms
+```
+
+### Fern CLI
+
+For Web development with live reload:
+
+```bash
+./fern-cli.sh example.cpp --port 8000
+```
+
+## Platform Renderer Interface
+
+All platform renderers implement the `PlatformRenderer` interface, which provides:
+
+- **Initialization**: `initialize(width, height)`
+- **Rendering**: `present(pixelBuffer, width, height)`
+- **Event handling**: Mouse, keyboard, resize callbacks
+- **Window management**: `setTitle()`, `setSize()`, `shouldClose()`
+- **Event polling**: `pollEvents()`
+
+<Note>
+The Web platform uses event listeners instead of polling, while native platforms (Linux, macOS) use event polling in the main loop.
+</Note>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Linux Setup" icon="linux" href="/platform/linux">
+    Learn about X11 dependencies and Linux-specific configuration
+  </Card>
+  <Card title="Web/WASM Setup" icon="code" href="/platform/web-wasm">
+    Compile to WebAssembly with Emscripten
+  </Card>
+</CardGroup>

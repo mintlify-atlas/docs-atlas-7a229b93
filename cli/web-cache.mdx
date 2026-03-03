@@ -1,0 +1,367 @@
+---
+title: web-cache
+description: Manage the Fern web build cache for faster compilation
+---
+
+The `web-cache` command manages the precompiled Fern library cache used for web builds, significantly reducing build times.
+
+## Usage
+
+```bash
+fern web-cache [action]
+```
+
+## Actions
+
+<ParamField path="status" type="action" default>
+  Show cache status and information
+</ParamField>
+
+<ParamField path="clear" type="action">
+  Remove the web build cache
+</ParamField>
+
+<ParamField path="rebuild" type="action">
+  Force rebuild of the cache
+</ParamField>
+
+## How It Works
+
+When building for web, Fern uses Emscripten to compile C++ to WebAssembly. To speed this up:
+
+1. **First web build**: Fern compiles the entire framework (~30 seconds) and caches the result
+2. **Subsequent builds**: Only your code is compiled (~5 seconds), linking against the cached library
+3. **Auto-rebuild**: Cache is automatically rebuilt if Fern source files change
+
+The cache is stored in `~/.fern/cache/web/libfern_web.a`.
+
+## Examples
+
+### Check Cache Status
+
+```bash
+fern web-cache status
+```
+
+<CodeGroup>
+```bash Output
+Fern Web Cache Status
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Web cache is available
+Cache location: ~/.fern/cache/web
+Library file: libfern_web.a
+Size: 2.4 MB
+Last modified: 2024-03-15 14:32:18
+
+Source location: ~/.fern/src/cpp
+Cache is up to date
+```
+</CodeGroup>
+
+### Clear Cache
+
+```bash
+fern web-cache clear
+```
+
+<CodeGroup>
+```bash Output
+Clearing Fern Web Cache
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Web cache cleared successfully
+Cache will be recreated automatically on next web build
+```
+</CodeGroup>
+
+This removes the precompiled library. The next web build will rebuild it automatically.
+
+### Rebuild Cache
+
+```bash
+fern web-cache rebuild
+```
+
+<CodeGroup>
+```bash Output
+Rebuilding Fern Web Cache
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Cleared existing cache
+Building Fern web library (this may take a moment)...
+Compiling Fern sources...
+Creating static library...
+
+Web cache rebuilt successfully
+Cache location: ~/.fern/cache/web/libfern_web.a
+```
+</CodeGroup>
+
+Forces an immediate rebuild of the cache.
+
+## Cache Status Details
+
+The status command shows:
+
+### Cache Information
+
+- **Cache location** - Directory containing cached files
+- **Library file** - Precompiled library filename
+- **Size** - File size in MB
+- **Last modified** - When cache was last built
+
+### Source Information
+
+- **Source location** - Fern framework source directory
+- **Up to date status** - Whether cache matches source
+
+### Cache States
+
+<AccordionGroup>
+  <Accordion title="Cache available and up to date">
+    ```bash
+    Web cache is available
+    Cache is up to date
+    ```
+    
+    Everything is working optimally. Web builds will be fast.
+  </Accordion>
+  
+  <Accordion title="Cache outdated">
+    ```bash
+    Web cache is available
+    Cache may be outdated (source files newer than cache)
+    Cache will be automatically rebuilt on next web build
+    ```
+    
+    The cache will be rebuilt automatically on your next web build.
+  </Accordion>
+  
+  <Accordion title="Cache not found">
+    ```bash
+    Web library cache not found
+    Expected file: ~/.fern/cache/web/libfern_web.a
+    Cache will be created automatically on first web build
+    ```
+    
+    Normal on first use. Cache will be created when you build for web.
+  </Accordion>
+  
+  <Accordion title="Cache directory missing">
+    ```bash
+    Web cache directory does not exist
+    Expected location: ~/.fern/cache/web
+    Cache will be created automatically on first web build
+    ```
+    
+    The cache directory will be created automatically.
+  </Accordion>
+</AccordionGroup>
+
+## When to Clear Cache
+
+Clear the cache when:
+
+- **Fern is updated** - After installing a new version of Fern
+- **Builds fail mysteriously** - Cache corruption can cause build issues
+- **Testing changes** - When developing Fern framework itself
+- **Disk space needed** - Cache uses ~2-3 MB
+
+## When Cache Rebuilds Automatically
+
+The cache automatically rebuilds when:
+
+1. Cache doesn't exist
+2. Fern source files are newer than cache
+3. Running `fern fire -p web` or `fern prepare web`
+
+You don't usually need to manually rebuild.
+
+## Performance Impact
+
+### Without Cache
+
+```bash
+fern fire -p web
+# First build: ~30 seconds
+# Subsequent builds: ~30 seconds (everything recompiles)
+```
+
+### With Cache
+
+```bash
+fern fire -p web
+# First build: ~30 seconds (creates cache)
+# Subsequent builds: ~5 seconds (uses cache)
+```
+
+**Speed improvement: 6x faster!**
+
+## Cache Contents
+
+The cache contains:
+
+```
+~/.fern/cache/web/
+└── libfern_web.a      # Precompiled Fern library (static archive)
+```
+
+During rebuild, temporary files are created:
+
+```
+~/.fern/cache/web/
+├── obj_0.o            # Temporary object files
+├── obj_1.o
+├── ...
+└── libfern_web.a      # Final library (temp files deleted)
+```
+
+## Cache Location
+
+<ParamField path="~/.fern/cache/web/" type="directory">
+  Web cache directory
+</ParamField>
+
+<ParamField path="~/.fern/cache/web/libfern_web.a" type="file">
+  Precompiled Fern web library
+</ParamField>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Web build fails after Fern update">
+    ```bash
+    fern fire -p web
+    # Error: linking failed
+    ```
+    
+    Solution: Clear and rebuild the cache:
+    ```bash
+    fern web-cache clear
+    fern fire -p web  # Rebuilds cache automatically
+    ```
+  </Accordion>
+  
+  <Accordion title="Cache won't rebuild">
+    ```bash
+    fern web-cache rebuild
+    # Error: Fern source not found
+    ```
+    
+    Solution: Reinstall Fern:
+    ```bash
+    cd /path/to/fern
+    ./install.sh
+    fern web-cache rebuild
+    ```
+  </Accordion>
+  
+  <Accordion title="Slow web builds even with cache">
+    Check cache status:
+    ```bash
+    fern web-cache status
+    ```
+    
+    If cache is outdated or missing, rebuild:
+    ```bash
+    fern web-cache rebuild
+    ```
+  </Accordion>
+  
+  <Accordion title="Emscripten errors during rebuild">
+    ```bash
+    fern web-cache rebuild
+    # Error: emcc: command not found
+    ```
+    
+    Solution: Activate Emscripten:
+    ```bash
+    source ~/emsdk/emsdk_env.sh
+    fern web-cache rebuild
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Build Process Detail
+
+### Without Cache
+
+```bash
+emcc main.cpp \
+  src/core/*.cpp \
+  src/graphics/*.cpp \
+  src/text/*.cpp \
+  src/font/*.cpp \
+  src/ui/**/*.cpp \
+  src/platform/web_renderer.cpp \
+  # ... all Fern sources (~50 files)
+  -o output.html
+```
+
+Every file is compiled each time.
+
+### With Cache
+
+```bash
+# Cache creation (once)
+emcc -c src/core/*.cpp ...  # Compile Fern to .o files
+emar rcs libfern_web.a *.o  # Create static library
+
+# Each build (fast)
+emcc main.cpp libfern_web.a -o output.html
+```
+
+Only your code is compiled; Fern is pre-compiled.
+
+## Related Commands
+
+- [`fern fire -p web`](/cli/fire) - Uses the cache for web builds
+- [`fern prepare web`](/cli/prepare) - Uses the cache for production builds
+- [`fern bloom`](/cli/bloom) - Checks if Emscripten is available
+
+## Advanced Usage
+
+### Manual Cache Management
+
+You can manually manage the cache directory:
+
+```bash
+# Check cache size
+du -sh ~/.fern/cache/web
+
+# Remove old object files
+rm ~/.fern/cache/web/*.o
+
+# Backup cache
+cp ~/.fern/cache/web/libfern_web.a ~/backup/
+
+# Restore cache
+cp ~/backup/libfern_web.a ~/.fern/cache/web/
+```
+
+### Multiple Fern Versions
+
+If you have multiple Fern installations:
+
+```bash
+# Each Fern installation uses the same cache
+# Clear cache when switching versions
+fern web-cache clear
+```
+
+### Development Workflow
+
+When developing Fern framework:
+
+```bash
+# Make changes to Fern source
+vim src/core/renderer.cpp
+
+# Rebuild cache to test
+fern web-cache rebuild
+
+# Test with your project
+cd ~/my_app
+fern fire -p web
+```

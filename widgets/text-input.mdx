@@ -1,0 +1,268 @@
+---
+title: TextInputWidget
+description: Text input fields with focus management and validation
+---
+
+TextInputWidget provides editable text fields with focus management, cursor handling, placeholder text, and input validation through signals.
+
+## Basic Usage
+
+```cpp
+#include <fern/fern.hpp>
+
+using namespace Fern;
+
+auto textInput = TextInput(TextInputConfig(100, 50, 200, 30)
+    .placeholder("Enter text..."));
+
+textInput->onTextChanged.connect([](const std::string& text) {
+    std::cout << "Text: " << text << std::endl;
+});
+```
+
+## Constructor
+
+<ParamField path="config" type="TextInputConfig">
+  Configuration object containing position, size, placeholder, and style
+</ParamField>
+
+## TextInputConfig
+
+Configure input field properties:
+
+```cpp
+TextInputConfig(int x, int y, int width, int height)
+```
+
+### Configuration Methods
+
+```cpp
+TextInputConfig& placeholder(const std::string& text)  // Placeholder text
+TextInputConfig& maxLength(size_t length)             // Maximum characters
+TextInputConfig& style(const TextInputStyle& s)       // Input style
+```
+
+## TextInputStyle
+
+Customize input field appearance:
+
+### Color Methods
+
+```cpp
+TextInputStyle& backgroundColor(uint32_t color)
+TextInputStyle& borderColor(uint32_t color)
+TextInputStyle& focusBorderColor(uint32_t color)
+TextInputStyle& textColor(uint32_t color)
+TextInputStyle& cursorColor(uint32_t color)
+```
+
+### Styling Methods
+
+```cpp
+TextInputStyle& borderWidth(int width)
+TextInputStyle& padding(int pad)
+TextInputStyle& fontSize(int size)
+TextInputStyle& useBitmapFont()
+TextInputStyle& useTTFFont(const std::string& fontName)
+```
+
+## Signals
+
+<ParamField path="onTextChanged" type="Signal<const std::string&>">
+  Emitted whenever the text content changes
+</ParamField>
+
+<ParamField path="onEnterPressed" type="Signal<const std::string&>">
+  Emitted when the Enter key is pressed
+</ParamField>
+
+<ParamField path="onFocusChanged" type="Signal<bool>">
+  Emitted when focus state changes (true = focused, false = unfocused)
+</ParamField>
+
+## Methods
+
+### Text Management
+
+```cpp
+void setText(const std::string& text)
+const std::string& getText() const
+void clear()
+```
+
+### Focus Management
+
+```cpp
+void setFocus(bool focused)
+bool isFocused() const
+```
+
+### Placeholder
+
+```cpp
+void setPlaceholder(const std::string& placeholder)
+const std::string& getPlaceholder() const
+```
+
+## Examples
+
+### Basic Text Input
+
+```cpp
+auto input = TextInput(TextInputConfig(100, 50, 200, 30)
+    .placeholder("Type here..."));
+
+input->onTextChanged.connect([](const std::string& text) {
+    std::cout << "Current text: " << text << std::endl;
+});
+```
+
+### Styled Input Field
+
+```cpp
+TextInputStyle style;
+style.backgroundColor(Colors::White)
+     .borderColor(Colors::Gray)
+     .focusBorderColor(Colors::Blue)
+     .textColor(Colors::Black)
+     .padding(8);
+
+auto input = TextInput(TextInputConfig(100, 50, 200, 30)
+    .placeholder("Enter text...")
+    .style(style));
+```
+
+### Input with Maximum Length
+
+```cpp
+auto input = TextInput(TextInputConfig(100, 50, 200, 30)
+    .placeholder("Max 50 characters")
+    .maxLength(50));
+```
+
+### TTF Font Input
+
+```cpp
+auto input = TextInput(TextInputConfig(100, 50, 300, 45)
+    .placeholder("Modern text input")
+    .style(TextInputStyle()
+        .useTTFFont("arial")
+        .fontSize(18)
+        .backgroundColor(Colors::LightGray)));
+```
+
+### Form Input with Validation
+
+```cpp
+auto emailInput = TextInput(TextInputConfig(100, 50, 250, 35)
+    .placeholder("email@example.com"));
+
+emailInput->onTextChanged.connect([](const std::string& text) {
+    bool valid = text.find('@') != std::string::npos;
+    if (valid) {
+        std::cout << "Valid email format" << std::endl;
+    }
+});
+
+emailInput->onEnterPressed.connect([](const std::string& text) {
+    std::cout << "Submitted: " << text << std::endl;
+});
+```
+
+### Focus Handling
+
+```cpp
+auto input = TextInput(TextInputConfig(100, 50, 200, 30)
+    .placeholder("Click to focus"));
+
+input->onFocusChanged.connect([](bool focused) {
+    if (focused) {
+        std::cout << "Input focused" << std::endl;
+    } else {
+        std::cout << "Input unfocused" << std::endl;
+    }
+});
+```
+
+## Input Presets
+
+The `TextInputPresets` namespace provides common configurations:
+
+```cpp
+// Default input
+auto input1 = TextInput(TextInputPresets::Default(100, 50));
+
+// Modern styled input
+auto input2 = TextInput(TextInputPresets::Modern(100, 100));
+
+// TTF font input
+auto input3 = TextInput(TextInputPresets::WithTTF(100, 150, "arial"));
+```
+
+## Complete Example
+
+From `examples/cpp/new/19_text_input_example.cpp`:
+
+```cpp
+#include <fern/fern.hpp>
+
+using namespace Fern;
+
+static std::shared_ptr<TextWidget> displayText;
+
+void setupUI() {
+    auto title = Text(Point(0, 0), "Text Input Example", 3, Colors::White);
+    displayText = Text(Point(0, 0), "Type something...", 2, Colors::Gray);
+    
+    TextInputStyle style;
+    style.backgroundColor(Colors::White)
+         .borderColor(Colors::Gray)
+         .focusBorderColor(Colors::Blue)
+         .textColor(Colors::Black)
+         .cursorColor(Colors::Black)
+         .padding(10)
+         .fontSize(2)
+         .borderWidth(2);
+    
+    auto textInput = TextInput(TextInputConfig(0, 0, 300, 40)
+        .placeholder("Type something here...")
+        .style(style));
+    
+    textInput->onTextChanged.connect([](const std::string& text) {
+        displayText->setText("You typed: " + text);
+    });
+    
+    textInput->onEnterPressed.connect([](const std::string& text) {
+        displayText->setText("Submitted: " + text);
+    });
+    
+    auto centerWidget = std::make_shared<CenterWidget>(
+        0, 0, Fern::getWidth(), Fern::getHeight());
+    centerWidget->add(Column({
+        title,
+        SizedBox(0, 30),
+        displayText,
+        SizedBox(0, 40),
+        textInput
+    }));
+    
+    addWidget(centerWidget);
+}
+```
+
+## Keyboard Input
+
+TextInputWidget automatically handles:
+
+- Character input (alphanumeric and symbols)
+- Backspace for deletion
+- Arrow keys for cursor movement
+- Home/End keys
+- Delete key
+- Enter key for submission
+
+## See Also
+
+- [TextWidget](/widgets/text) - For non-editable text display
+- [ButtonWidget](/widgets/button) - Often used with forms
+- [DropdownWidget](/widgets/dropdown) - Alternative input method

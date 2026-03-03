@@ -1,0 +1,218 @@
+---
+title: FontManager
+description: Centralized font loading and management system
+---
+
+The FontManager class provides centralized management for TrueType fonts. It handles font loading, caching, and provides convenient methods for text rendering and metrics calculation.
+
+## Singleton Access
+
+### getInstance()
+
+```cpp
+static FontManager& getInstance()
+```
+
+<ResponseField name="return" type="FontManager&">
+  Reference to the singleton FontManager instance
+</ResponseField>
+
+```cpp
+FontManager::getInstance().loadTTFFont("main", "font.ttf");
+```
+
+## TTF Font Management
+
+### loadTTFFont()
+
+```cpp
+bool loadTTFFont(const std::string& name, const std::string& fontPath)
+```
+
+Loads a TrueType font from a file and registers it with the given name.
+
+<ParamField path="name" type="const std::string&" required>
+  Name to register the font under
+</ParamField>
+
+<ParamField path="fontPath" type="const std::string&" required>
+  Path to the .ttf font file
+</ParamField>
+
+<ResponseField name="return" type="bool">
+  True if the font was loaded successfully, false otherwise
+</ResponseField>
+
+```cpp
+FontManager::getInstance().loadTTFFont("main", "assets/fonts/OpenSans.ttf");
+```
+
+### setDefaultTTFFont()
+
+```cpp
+void setDefaultTTFFont(const std::string& name)
+```
+
+Sets the default TTF font to use when no font name is specified in rendering calls.
+
+<ParamField path="name" type="const std::string&" required>
+  Name of the registered font to use as default
+</ParamField>
+
+```cpp
+FontManager::getInstance().setDefaultTTFFont("main");
+```
+
+### hasTTFFont()
+
+```cpp
+bool hasTTFFont() const
+```
+
+Checks if at least one TTF font has been loaded.
+
+<ResponseField name="return" type="bool">
+  True if at least one TTF font is loaded, false otherwise
+</ResponseField>
+
+```cpp
+if (FontManager::getInstance().hasTTFFont()) {
+    // Use TTF rendering
+}
+```
+
+### getTTFFont()
+
+```cpp
+TTFFontRenderer* getTTFFont(const std::string& name = "")
+```
+
+Retrieves a TTF font renderer by name. If name is empty, returns the default font.
+
+<ParamField path="name" type="const std::string&" default="">
+  Name of the font to retrieve (empty string gets default)
+</ParamField>
+
+<ResponseField name="return" type="TTFFontRenderer*">
+  Pointer to the font renderer, or nullptr if not found
+</ResponseField>
+
+```cpp
+TTFFontRenderer* font = FontManager::getInstance().getTTFFont("main");
+```
+
+## Font Metrics
+
+### getTextWidth()
+
+```cpp
+int getTextWidth(const std::string& text, int size, const std::string& fontName = "")
+```
+
+Calculates the width of a text string in pixels using the specified font.
+
+<ParamField path="text" type="const std::string&" required>
+  Text string to measure
+</ParamField>
+
+<ParamField path="size" type="int" required>
+  Font size in points
+</ParamField>
+
+<ParamField path="fontName" type="const std::string&" default="">
+  Name of the font to use (empty string uses default)
+</ParamField>
+
+<ResponseField name="return" type="int">
+  Text width in pixels
+</ResponseField>
+
+```cpp
+int width = FontManager::getInstance().getTextWidth("Hello", 24, "main");
+```
+
+### getTextHeight()
+
+```cpp
+int getTextHeight(int size, const std::string& fontName = "")
+```
+
+Calculates the height of text at the given size using the specified font.
+
+<ParamField path="size" type="int" required>
+  Font size in points
+</ParamField>
+
+<ParamField path="fontName" type="const std::string&" default="">
+  Name of the font to use (empty string uses default)
+</ParamField>
+
+<ResponseField name="return" type="int">
+  Text height in pixels
+</ResponseField>
+
+```cpp
+int height = FontManager::getInstance().getTextHeight(24, "main");
+```
+
+## Cache Management
+
+### clearAllCaches()
+
+```cpp
+void clearAllCaches()
+```
+
+Clears all cached glyph data for all loaded fonts. This can help free memory but will require re-rendering glyphs on next use.
+
+```cpp
+FontManager::getInstance().clearAllCaches();
+```
+
+## Example Usage
+
+### Basic Font Setup
+
+```cpp
+// Load fonts
+FontManager& fm = FontManager::getInstance();
+fm.loadTTFFont("regular", "assets/fonts/OpenSans-Regular.ttf");
+fm.loadTTFFont("bold", "assets/fonts/OpenSans-Bold.ttf");
+fm.setDefaultTTFFont("regular");
+```
+
+### Text Measurement
+
+```cpp
+// Calculate centered position
+std::string text = "Centered Text";
+int width = FontManager::getInstance().getTextWidth(text, 24);
+int height = FontManager::getInstance().getTextHeight(24);
+int x = (canvasWidth - width) / 2;
+int y = (canvasHeight - height) / 2;
+```
+
+### Multiple Fonts
+
+```cpp
+FontManager& fm = FontManager::getInstance();
+
+// Load multiple fonts
+fm.loadTTFFont("title", "fonts/Title.ttf");
+fm.loadTTFFont("body", "fonts/Body.ttf");
+fm.loadTTFFont("mono", "fonts/Mono.ttf");
+
+// Use different fonts for different purposes
+int titleWidth = fm.getTextWidth("Title", 32, "title");
+int bodyWidth = fm.getTextWidth("Body text", 16, "body");
+int codeWidth = fm.getTextWidth("code", 14, "mono");
+```
+
+### Memory Management
+
+```cpp
+// Clear caches when memory is tight
+if (needToFreeMemory) {
+    FontManager::getInstance().clearAllCaches();
+}
+```

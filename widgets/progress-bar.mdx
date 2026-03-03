@@ -1,0 +1,325 @@
+---
+title: ProgressBarWidget
+description: Horizontal progress bars for visualizing completion
+---
+
+ProgressBarWidget displays horizontal progress indicators showing completion percentage or value within a range.
+
+## Basic Usage
+
+```cpp
+#include <fern/fern.hpp>
+
+using namespace Fern;
+
+auto progressBar = ProgressBar(ProgressBarConfig(50, 50, 300, 25)
+    .value(45.0f)
+    .range(0.0f, 100.0f));
+
+progressBar->onValueChanged.connect([](float value) {
+    std::cout << "Progress: " << value << "%" << std::endl;
+});
+```
+
+## Constructor
+
+<ParamField path="config" type="ProgressBarConfig">
+  Configuration object containing position, size, value range, and style
+</ParamField>
+
+## ProgressBarConfig
+
+Configure progress bar properties:
+
+```cpp
+ProgressBarConfig(int x, int y, int width = 300, int height = 25)
+```
+
+### Configuration Methods
+
+```cpp
+ProgressBarConfig& range(float minValue, float maxValue)  // Set value range
+ProgressBarConfig& value(float value)                     // Set current value
+ProgressBarConfig& style(const ProgressBarStyle& s)       // Set style
+```
+
+## ProgressBarStyle
+
+Customize progress bar appearance:
+
+### Color Methods
+
+```cpp
+ProgressBarStyle& backgroundColor(uint32_t color)   // Unfilled area color
+ProgressBarStyle& fillColor(uint32_t color)        // Filled area color
+ProgressBarStyle& borderColor(uint32_t color)      // Border color
+ProgressBarStyle& textColor(uint32_t color)        // Percentage text color
+```
+
+### Display Methods
+
+```cpp
+ProgressBarStyle& borderWidth(int width)
+ProgressBarStyle& showPercentage(bool show)        // Show percentage text
+ProgressBarStyle& fontSize(int size)
+ProgressBarStyle& useBitmapFont()
+ProgressBarStyle& useTTFFont(const std::string& fontName)
+```
+
+## Signals
+
+<ParamField path="onValueChanged" type="Signal<float>">
+  Emitted when the progress value changes
+</ParamField>
+
+<ParamField path="onComplete" type="Signal<>">
+  Emitted when progress reaches 100%
+</ParamField>
+
+## Methods
+
+### Value Management
+
+```cpp
+void setValue(float value)
+float getValue() const
+void setRange(float minValue, float maxValue)
+float getPercentage() const
+```
+
+## Examples
+
+### Basic Progress Bar
+
+```cpp
+auto progress = ProgressBar(ProgressBarConfig(50, 50, 300, 20)
+    .value(45.0f)
+    .range(0.0f, 100.0f));
+
+progress->onValueChanged.connect([](float value) {
+    std::cout << "Progress: " << value << "%" << std::endl;
+});
+```
+
+### Download Progress
+
+```cpp
+auto downloadBar = ProgressBar(ProgressBarConfig(50, 100, 400, 25)
+    .value(0.0f)
+    .range(0.0f, 100.0f)
+    .style(ProgressBarStyle()
+        .backgroundColor(Colors::Gray)
+        .fillColor(Colors::Blue)
+        .showPercentage(true)));
+
+downloadBar->onValueChanged.connect([](float progress) {
+    std::cout << "Download: " << progress << "% complete" << std::endl;
+});
+
+downloadBar->onComplete.connect([]() {
+    std::cout << "Download completed!" << std::endl;
+});
+```
+
+### Health Bar
+
+```cpp
+auto healthBar = ProgressBar(ProgressBarConfig(50, 50, 200, 15)
+    .value(80.0f)
+    .range(0.0f, 100.0f)
+    .style(ProgressBarStyle()
+        .backgroundColor(Colors::DarkGray)
+        .fillColor(Colors::Green)
+        .borderColor(Colors::Black)
+        .borderWidth(1)
+        .showPercentage(true)
+        .fontSize(1)));
+
+healthBar->onValueChanged.connect([](float health) {
+    if (health < 25.0f) {
+        std::cout << "Health critical!" << std::endl;
+    }
+});
+```
+
+### Custom Styled Progress Bar
+
+```cpp
+auto customBar = ProgressBar(ProgressBarConfig(50, 150, 300, 30)
+    .value(40.0f)
+    .range(0.0f, 100.0f)
+    .style(ProgressBarStyle()
+        .backgroundColor(0xFF2C3E50)    // Dark blue-gray
+        .fillColor(0xFF3498DB)          // Bright blue
+        .borderColor(0xFF34495E)        // Darker border
+        .borderWidth(3)
+        .showPercentage(true)
+        .textColor(0xFFFFFFFF)          // White text
+        .fontSize(3)));
+```
+
+### System Resource Monitoring
+
+```cpp
+auto cpuBar = ProgressBar(ProgressBarConfig(50, 50, 150, 12)
+    .value(45.0f)
+    .range(0.0f, 100.0f)
+    .style(ProgressBarStyle()
+        .backgroundColor(Colors::DarkGray)
+        .fillColor(Colors::Blue)
+        .showPercentage(true)
+        .fontSize(1)));
+
+auto memoryBar = ProgressBar(ProgressBarConfig(50, 70, 150, 12)
+    .value(67.0f)
+    .range(0.0f, 100.0f)
+    .style(ProgressBarStyle()
+        .backgroundColor(Colors::DarkGray)
+        .fillColor(Colors::Orange)
+        .showPercentage(true)
+        .fontSize(1)));
+
+auto diskBar = ProgressBar(ProgressBarConfig(50, 90, 150, 12)
+    .value(32.0f)
+    .range(0.0f, 100.0f)
+    .style(ProgressBarStyle()
+        .backgroundColor(Colors::DarkGray)
+        .fillColor(Colors::Green)
+        .showPercentage(true)
+        .fontSize(1)));
+```
+
+### Multi-Step Process
+
+```cpp
+auto processBar = ProgressBar(ProgressBarConfig(50, 50, 350, 25)
+    .value(0.0f)
+    .range(0.0f, 100.0f));
+
+std::vector<std::string> steps = {
+    "Initializing...",
+    "Loading data...",
+    "Processing...",
+    "Saving results...",
+    "Complete!"
+};
+
+int currentStep = 0;
+processBar->onValueChanged.connect([&](float progress) {
+    int stepIndex = static_cast<int>(progress / 25.0f);
+    if (stepIndex < steps.size() && stepIndex != currentStep) {
+        currentStep = stepIndex;
+        std::cout << steps[currentStep] << std::endl;
+    }
+});
+```
+
+### Experience/Level Progress
+
+```cpp
+auto xpBar = ProgressBar(ProgressBarConfig(50, 50, 280, 16)
+    .value(85.0f)
+    .range(0.0f, 100.0f)
+    .style(ProgressBarStyle()
+        .backgroundColor(0xFF4A4A4A)    // Dark gray
+        .fillColor(0xFFFFD700)          // Gold
+        .borderColor(0xFF8B4513)        // Brown
+        .borderWidth(2)
+        .showPercentage(true)
+        .textColor(Colors::White)));
+
+xpBar->onComplete.connect([]() {
+    std::cout << "Level up!" << std::endl;
+});
+```
+
+## Progress Bar Presets
+
+The `ProgressBarPresets` namespace provides common configurations:
+
+```cpp
+// Default progress bar
+auto default = ProgressBar(ProgressBarPresets::Default(50, 50));
+
+// Loading progress bar
+auto loading = ProgressBar(ProgressBarPresets::Loading(50, 100, 250, 20));
+
+// Health bar
+auto health = ProgressBar(ProgressBarPresets::Health(50, 150, 200, 15));
+
+// Download progress bar
+auto download = ProgressBar(ProgressBarPresets::Download(50, 200, 400, 30));
+```
+
+## Complete Example
+
+From `examples/cpp/new/progress_bar_widget_example.cpp`:
+
+```cpp
+#include <fern/fern.hpp>
+
+using namespace Fern;
+
+void setupUI() {
+    auto downloadProgress = ProgressBar(
+        ProgressBarPresets::Download(50, 50, 400, 25));
+    
+    downloadProgress->setValue(25.0f);
+    
+    downloadProgress->onValueChanged.connect([](float progress) {
+        std::cout << "Download: " << progress << "% complete" << std::endl;
+    });
+    
+    downloadProgress->onComplete.connect([]() {
+        std::cout << "Download completed!" << std::endl;
+    });
+    
+    auto healthBar = ProgressBar(
+        ProgressBarPresets::Health(50, 100, 200, 15));
+    
+    healthBar->setValue(80.0f);
+    
+    healthBar->onValueChanged.connect([](float health) {
+        if (health < 25.0f) {
+            std::cout << "Health critical: " << health << "%" << std::endl;
+        }
+    });
+}
+```
+
+## Animating Progress
+
+You can update progress values in a draw callback for smooth animations:
+
+```cpp
+static std::shared_ptr<ProgressBarWidget> loadingBar;
+static float progress = 0.0f;
+
+void setupUI() {
+    loadingBar = ProgressBar(ProgressBarConfig(50, 50, 300, 25)
+        .value(0.0f));
+}
+
+void draw() {
+    Draw::fill(Colors::DarkBlue);
+    
+    // Update progress
+    progress += 0.5f;
+    if (progress > 100.0f) progress = 0.0f;
+    
+    loadingBar->setValue(progress);
+}
+```
+
+## Use Cases
+
+- **File operations** - Downloads, uploads, installations
+- **Game mechanics** - Health, experience, loading
+- **System monitoring** - CPU, memory, disk usage
+- **Multi-step processes** - Wizards, workflows
+- **Loading screens** - Application startup
+
+## See Also
+
+- [CircularIndicatorWidget](/widgets/circular-indicator) - For circular progress
+- [SliderWidget](/widgets/slider) - For interactive value selection

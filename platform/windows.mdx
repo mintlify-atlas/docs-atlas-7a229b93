@@ -1,0 +1,309 @@
+---
+title: Windows Platform
+description: Windows support (planned feature)
+icon: windows
+---
+
+<Warning>
+**Planned Feature**: Windows support is not yet implemented. This page documents the planned architecture and what to expect when Windows support becomes available.
+</Warning>
+
+Fern will support native Windows applications using Win32 API for window management and rendering. This platform is currently in the planning phase.
+
+## Planned Implementation
+
+When Windows support is added, it will provide:
+
+- Win32 window creation and management
+- GDI+ or Direct2D rendering
+- Native Windows event handling (mouse, keyboard, window events)
+- Windows-specific features (taskbar integration, etc.)
+
+## Platform Detection
+
+The build system already includes Windows detection:
+
+```cmake CMakeLists.txt:22-24
+elseif(WIN32)
+    set(PLATFORM_NAME "Windows")
+    add_definitions(-DWIN32)
+```
+
+Currently, attempting to build on Windows will produce an error:
+
+```cpp platform_factory.cpp:26
+#error "Only Web, macOS, and Linux platforms supported currently"
+```
+
+## Planned Architecture
+
+The Windows renderer will follow the same pattern as other platforms:
+
+### Renderer Implementation
+
+```cpp windows_renderer.cpp (planned)
+namespace Fern {
+    class WindowsRenderer : public PlatformRenderer {
+    private:
+        HWND hwnd_;              // Window handle
+        HDC hdc_;                // Device context
+        HBITMAP hBitmap_;        // Bitmap for pixel buffer
+        uint32_t* pixelBuffer_;  // Pixel data
+        int width_, height_;
+        bool shouldClose_;
+        
+    public:
+        void initialize(int width, int height) override;
+        void present(uint32_t* pixelBuffer, int width, int height) override;
+        void pollEvents() override;
+        bool shouldClose() override;
+        // ... other interface methods
+    };
+}
+```
+
+### Window Procedure
+
+```cpp
+LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    switch (uMsg) {
+        case WM_CLOSE:
+            // Handle window close
+            break;
+        case WM_SIZE:
+            // Handle window resize
+            break;
+        case WM_MOUSEMOVE:
+            // Handle mouse movement
+            break;
+        case WM_KEYDOWN:
+        case WM_KEYUP:
+            // Handle keyboard events
+            break;
+        // ... other messages
+    }
+    return DefWindowProc(hwnd, uMsg, wParam, lParam);
+}
+```
+
+### Pixel Buffer Rendering
+
+Possible approaches:
+
+<Tabs>
+  <Tab title="GDI+ (Simple)">
+    ```cpp
+    // Create DIB section for direct pixel access
+    BITMAPINFO bmi = {0};
+    bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+    bmi.bmiHeader.biWidth = width;
+    bmi.bmiHeader.biHeight = -height; // Top-down
+    bmi.bmiHeader.biPlanes = 1;
+    bmi.bmiHeader.biBitCount = 32;
+    bmi.bmiHeader.biCompression = BI_RGB;
+    
+    HDC hdcMem = CreateCompatibleDC(hdc_);
+    HBITMAP hBitmap = CreateDIBSection(hdcMem, &bmi, DIB_RGB_COLORS, (void**)&pixelBuffer_, NULL, 0);
+    ```
+  </Tab>
+  <Tab title="Direct2D (Modern)">
+    ```cpp
+    // Use Direct2D for hardware-accelerated rendering
+    ID2D1Factory* pFactory;
+    ID2D1HwndRenderTarget* pRenderTarget;
+    ID2D1Bitmap* pBitmap;
+    
+    // Update bitmap with pixel data
+    pBitmap->CopyFromMemory(NULL, pixelBuffer, width * 4);
+    pRenderTarget->DrawBitmap(pBitmap);
+    ```
+  </Tab>
+</Tabs>
+
+## Build System Integration
+
+### CMake Configuration (Planned)
+
+```cmake CMakeLists.txt (future)
+elseif(WIN32)
+    # Windows-specific sources
+    list(APPEND PLATFORM_SOURCES src/cpp/src/platform/windows_renderer.cpp)
+    
+    # Link against Windows libraries
+    target_link_libraries(fern PUBLIC 
+        user32      # Window management
+        gdi32       # Graphics Device Interface
+        # or d2d1 for Direct2D
+    )
+endif()
+```
+
+### Build Script Support (Planned)
+
+```bash build.sh (future)
+build_windows() {
+    log "Building for Windows..."
+    
+    # Check for MSVC or MinGW
+    if command -v cl &> /dev/null; then
+        # MSVC build
+        cl /std:c++17 /D_WIN32 ...
+    elif command -v g++ &> /dev/null; then
+        # MinGW build
+        g++ -std=c++17 -DWIN32 -mwindows ...
+    fi
+}
+```
+
+## Expected Build Process
+
+When Windows support is implemented, building will likely follow:
+
+<Tabs>
+  <Tab title="Visual Studio">
+    ```bash
+    mkdir build
+    cd build
+    cmake .. -G "Visual Studio 17 2022"
+    cmake --build . --config Release
+    ```
+  </Tab>
+  <Tab title="MinGW">
+    ```bash
+    mkdir build
+    cd build
+    cmake .. -G "MinGW Makefiles"
+    cmake --build .
+    ```
+  </Tab>
+  <Tab title="MSYS2">
+    ```bash
+    # Install dependencies
+    pacman -S mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake
+    
+    mkdir build && cd build
+    cmake ..
+    make
+    ```
+  </Tab>
+</Tabs>
+
+## Virtual Key Code Translation
+
+Windows virtual key codes will be mapped to Fern's KeyCode enum:
+
+```cpp (planned)
+KeyCode translateWindowsKeyToFernKey(WPARAM vkCode) {
+    switch (vkCode) {
+        case VK_RETURN: return KeyCode::Enter;
+        case VK_ESCAPE: return KeyCode::Escape;
+        case VK_SPACE: return KeyCode::Space;
+        case VK_BACK: return KeyCode::Backspace;
+        case VK_TAB: return KeyCode::Tab;
+        case VK_LEFT: return KeyCode::ArrowLeft;
+        case VK_RIGHT: return KeyCode::ArrowRight;
+        case VK_UP: return KeyCode::ArrowUp;
+        case VK_DOWN: return KeyCode::ArrowDown;
+        case 'A': return KeyCode::A;
+        // ... full keyboard mapping
+        default: return KeyCode::Unknown;
+    }
+}
+```
+
+## Development Roadmap
+
+<Steps>
+  <Step title="Initial Implementation">
+    Create basic Win32 window with GDI+ rendering
+  </Step>
+  <Step title="Event Handling">
+    Implement mouse, keyboard, and window events
+  </Step>
+  <Step title="Testing">
+    Test on Windows 10 and Windows 11
+  </Step>
+  <Step title="Optimization">
+    Consider Direct2D for better performance
+  </Step>
+  <Step title="Build System">
+    Integrate with CMake and build scripts
+  </Step>
+  <Step title="Documentation">
+    Complete setup and usage documentation
+  </Step>
+</Steps>
+
+## Current Workaround
+
+Until native Windows support is available, you can run Fern applications on Windows using:
+
+### WSL (Windows Subsystem for Linux)
+
+```bash
+# Install WSL2
+wsl --install
+
+# Install Ubuntu (or your preferred distro)
+wsl --install -d Ubuntu
+
+# Inside WSL, build for Linux
+sudo apt-get install libx11-dev
+./build.sh linux
+
+# Run with X server (VcXsrv, Xming, or WSLg)
+export DISPLAY=:0
+./build/linux/platform_test
+```
+
+<Tip>
+Windows 11 includes WSLg which provides automatic X server support without additional configuration.
+</Tip>
+
+### Web/WASM
+
+Build for Web and run in any browser:
+
+```bash
+# Install Emscripten on Windows
+# Then build for Web
+bash build.sh web
+
+# Serve and view in browser
+python -m http.server 8000 -d build/web
+```
+
+## Contributing
+
+If you're interested in implementing Windows support:
+
+1. **Familiarize yourself** with the existing platform renderers (Linux, Web, macOS)
+2. **Study the PlatformRenderer interface** in the source code
+3. **Start with a minimal Win32 window** and pixel buffer rendering
+4. **Follow the existing patterns** for event handling and callbacks
+5. **Submit a pull request** with your implementation
+
+### Key Files to Reference
+
+- `src/cpp/src/platform/linux_renderer.cpp` - Similar structure using X11
+- `src/cpp/src/platform/platform_factory.cpp` - Where to add Windows renderer instantiation
+- `src/cpp/include/fern/platform/renderer.hpp` - Interface to implement
+
+## Stay Updated
+
+Watch the GitHub repository for updates on Windows support:
+
+- Track issues labeled `platform:windows`
+- Follow pull requests implementing Windows features
+- Check release notes for Windows support announcements
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Linux Platform" icon="linux" href="/platform/linux">
+    Currently supported native platform
+  </Card>
+  <Card title="Web/WASM" icon="globe" href="/platform/web-wasm">
+    Cross-platform solution that works on Windows
+  </Card>
+</CardGroup>

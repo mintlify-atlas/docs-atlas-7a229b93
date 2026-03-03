@@ -1,0 +1,233 @@
+---
+title: ButtonWidget
+description: Interactive clickable buttons with hover effects and custom styling
+---
+
+ButtonWidget provides clickable UI elements with hover effects, custom styling, auto-sizing, and event handling through signals.
+
+## Basic Usage
+
+```cpp
+#include <fern/fern.hpp>
+
+using namespace Fern;
+
+auto button = Button(ButtonConfig(100, 50, 120, 40, "Click Me"));
+button->onClick.connect([]() {
+    std::cout << "Button clicked!" << std::endl;
+});
+```
+
+## Constructor
+
+<ParamField path="config" type="ButtonConfig">
+  Configuration object containing position, size, label, and style
+</ParamField>
+
+## ButtonConfig
+
+Configure button properties with a fluent interface:
+
+```cpp
+ButtonConfig(int x, int y, int width, int height, const std::string& label)
+```
+
+### Configuration Methods
+
+```cpp
+ButtonConfig& style(const ButtonStyle& s)       // Set button style
+ButtonConfig& label(const std::string& text)    // Set label text
+ButtonConfig& position(int x, int y)            // Set position
+ButtonConfig& size(int width, int height)       // Set size
+```
+
+## ButtonStyle
+
+Customize button appearance:
+
+### Color Methods
+
+```cpp
+ButtonStyle& normalColor(uint32_t color)      // Default button color
+ButtonStyle& hoverColor(uint32_t color)       // Color when hovering
+ButtonStyle& pressColor(uint32_t color)       // Color when pressed
+ButtonStyle& textColor(uint32_t color)        // Text color
+```
+
+### Styling Methods
+
+```cpp
+ButtonStyle& textScale(int scale)             // Text size (1-5)
+ButtonStyle& borderRadius(int radius)         // Corner roundness
+ButtonStyle& border(int width, uint32_t color) // Border width and color
+```
+
+## Signals
+
+Buttons emit signals for user interaction:
+
+<ParamField path="onClick" type="Signal<>">
+  Emitted when the button is clicked
+</ParamField>
+
+<ParamField path="onHover" type="Signal<bool>">
+  Emitted when hover state changes (true = hovering, false = not hovering)
+</ParamField>
+
+<ParamField path="onPress" type="Signal<bool>">
+  Emitted when press state changes (true = pressed, false = released)
+</ParamField>
+
+## Methods
+
+### Configuration
+
+```cpp
+void setConfig(const ButtonConfig& config)
+const ButtonConfig& getConfig() const
+
+void setLabel(const std::string& label)
+```
+
+### Auto-Sizing
+
+```cpp
+void autoSizeToContent(int padding = 16)
+static int calculateTextWidth(const std::string& text, int textScale)
+static int calculateTextHeight(int textScale)
+```
+
+## Examples
+
+### Basic Button
+
+```cpp
+auto button = Button(ButtonConfig(100, 50, 120, 40, "Click Me"));
+button->onClick.connect([]() {
+    std::cout << "Clicked!" << std::endl;
+});
+```
+
+### Custom Styled Button
+
+```cpp
+ButtonConfig config(100, 50, 120, 40, "Submit");
+config.style(ButtonStyle()
+    .normalColor(Colors::Green)
+    .hoverColor(Colors::LightGreen)
+    .pressColor(Colors::DarkGreen)
+    .textColor(Colors::White)
+    .borderRadius(8));
+
+auto button = Button(config);
+```
+
+### Button with Border
+
+```cpp
+ButtonStyle style;
+style.normalColor(Colors::White)
+     .textColor(Colors::Blue)
+     .border(2, Colors::Blue)
+     .borderRadius(4);
+
+auto button = Button(ButtonConfig(100, 50, 120, 40, "Outlined")
+    .style(style));
+```
+
+### Button with All Events
+
+```cpp
+auto button = Button(ButtonConfig(100, 50, 120, 40, "Interactive"));
+
+button->onClick.connect([]() {
+    std::cout << "Button clicked!" << std::endl;
+});
+
+button->onHover.connect([](bool isHovered) {
+    if (isHovered) {
+        std::cout << "Mouse entered" << std::endl;
+    } else {
+        std::cout << "Mouse left" << std::endl;
+    }
+});
+
+button->onPress.connect([](bool isPressed) {
+    if (isPressed) {
+        std::cout << "Button pressed" << std::endl;
+    } else {
+        std::cout << "Button released" << std::endl;
+    }
+});
+```
+
+## Button Presets
+
+The `ButtonPresets` namespace provides common button styles:
+
+```cpp
+// Primary button (blue)
+auto primary = Button(ButtonPresets::Primary(10, 10, 100, 35, "Save"));
+
+// Secondary button (gray)
+auto secondary = Button(ButtonPresets::Secondary(120, 10, 100, 35, "Cancel"));
+
+// Success button (green)
+auto success = Button(ButtonPresets::Success(10, 50, 100, 35, "Confirm"));
+
+// Danger button (red)
+auto danger = Button(ButtonPresets::Danger(120, 50, 100, 35, "Delete"));
+
+// Warning button (orange)
+auto warning = Button(ButtonPresets::Warning(10, 90, 100, 35, "Warning"));
+
+// Info button (light blue)
+auto info = Button(ButtonPresets::Info(120, 90, 100, 35, "Info"));
+
+// Light button (light gray)
+auto light = Button(ButtonPresets::Light(10, 130, 100, 35, "Light"));
+
+// Dark button (dark gray)
+auto dark = Button(ButtonPresets::Dark(120, 130, 100, 35, "Dark"));
+```
+
+## Complete Example
+
+From `examples/cpp/new/06_button_styles.cpp`:
+
+```cpp
+#include <fern/fern.hpp>
+
+using namespace Fern;
+
+void setupUI() {
+    auto primaryBtn = Button(ButtonPresets::Primary(0, 0, 120, 40, "Primary"));
+    auto successBtn = Button(ButtonPresets::Success(0, 0, 120, 40, "Success"));
+    auto dangerBtn = Button(ButtonPresets::Danger(0, 0, 120, 40, "Danger"));
+    auto warningBtn = Button(ButtonPresets::Warning(0, 0, 120, 40, "Warning"));
+    
+    primaryBtn->onClick.connect([]() {
+        std::cout << "Primary button clicked!" << std::endl;
+    });
+    
+    addWidget(
+        Center(
+            Column({
+                primaryBtn,
+                SizedBox(0, 10),
+                successBtn,
+                SizedBox(0, 10),
+                dangerBtn,
+                SizedBox(0, 10),
+                warningBtn
+            })
+        )
+    );
+}
+```
+
+## See Also
+
+- [TextWidget](/widgets/text) - For non-interactive text
+- [RadioButtonWidget](/widgets/radio-button) - For selection from multiple options
+- [DropdownWidget](/widgets/dropdown) - For dropdown menus

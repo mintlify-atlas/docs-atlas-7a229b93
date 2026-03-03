@@ -1,80 +1,290 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: "Quick Start"
+description: "Build your first Fern application in minutes with this interactive tutorial"
 ---
 
-## Get started in three steps
+# Quick Start
 
-Get your documentation site running locally and make your first customization.
+This guide will walk you through creating your first Fern application - a simple click counter with buttons. You'll learn the fundamentals of building UIs with Fern's widget system.
 
-### Step 1: Set up your local environment
+## Prerequisites
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+Before starting, make sure you have:
 
-### Step 2: Deploy your changes
-
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
-
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
-
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 3: Go live
-
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
-
-## Next steps
-
-Now that you have your docs running, explore these key features:
-
-<CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
-</CardGroup>
+- C++17 compiler (g++ or clang++)
+- CMake 3.10+
+- Fern installed globally (see [Installation Guide](/installation))
 
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+If you haven't installed Fern yet, follow the [installation instructions](/installation) first.
 </Note>
+
+## Create Your First Project
+
+<Steps>
+  <Step title="Create a new project">
+    Use the Fern CLI to scaffold a new project:
+
+    ```bash
+    fern sprout my-counter
+    cd my-counter
+    ```
+
+    This creates a new directory with the basic project structure:
+    ```
+    my-counter/
+    ├── lib/
+    │   └── main.cpp
+    ├── fern.yaml
+    └── README.md
+    ```
+  </Step>
+
+  <Step title="Write your first app">
+    Open `lib/main.cpp` and replace its contents with this click counter example:
+
+    ```cpp
+    #include <fern/fern.hpp>
+    #include <iostream>
+
+    using namespace Fern;
+
+    static int clickCount = 0;
+    static std::shared_ptr<TextWidget> counterDisplay;
+
+    void setupUI() {
+        // Counter display
+        counterDisplay = Text(Point(0, 0), "Clicks: 0", 3, Colors::White);
+        
+        // Click button
+        auto button = Button(
+            ButtonConfig(0, 0, 150, 50, "Click Me!")
+                .style(ButtonStyle()
+                    .normalColor(Colors::Blue)
+                    .hoverColor(Colors::LightBlue)
+                    .pressColor(Colors::DarkBlue)
+                    .textColor(Colors::White)
+                    .textScale(2)
+                )
+        );
+        button->onClick.connect([]() {
+            clickCount++;
+            counterDisplay->setText("Clicks: " + std::to_string(clickCount));
+            std::cout << "Button clicked " << clickCount << " times!" << std::endl;
+        });
+        
+        // Reset button
+        auto resetButton = Button(
+            ButtonConfig(0, 0, 100, 40, "Reset")
+                .style(ButtonStyle()
+                    .normalColor(Colors::Red)
+                    .hoverColor(Colors::LightRed)
+                    .pressColor(Colors::DarkRed)
+                    .textColor(Colors::White)
+                    .textScale(2)
+                )
+        );
+        resetButton->onClick.connect([]() {
+            clickCount = 0;
+            counterDisplay->setText("Clicks: 0");
+            std::cout << "Counter reset!" << std::endl;
+        });
+        
+        // Layout
+        std::vector<std::shared_ptr<Widget>> children = {
+            counterDisplay,
+            SizedBox(0, 30),
+            button,
+            SizedBox(0, 20),
+            resetButton
+        };
+        
+        addWidget(Center(Column(children)));
+    }
+
+    void draw() {
+        Draw::fill(Colors::DarkBlue);
+    }
+
+    int main() {
+        Fern::initialize();
+        setupUI();
+        Fern::setDrawCallback(draw);
+        Fern::startRenderLoop();
+        return 0;
+    }
+    ```
+  </Step>
+
+  <Step title="Run your app">
+    Build and run your application:
+
+    <CodeGroup>
+    ```bash Linux
+    fern fire
+    ```
+
+    ```bash Build for Web
+    fern fire --web
+    ```
+    </CodeGroup>
+
+    Your app will compile and launch in a new window!
+  </Step>
+</Steps>
+
+## Understanding the Code
+
+Let's break down the key components of your first Fern app:
+
+### 1. State Management
+
+```cpp
+static int clickCount = 0;
+static std::shared_ptr<TextWidget> counterDisplay;
+```
+
+We use static variables to maintain state across function calls. The `counterDisplay` stores a reference to the text widget so we can update it later.
+
+### 2. Creating Widgets
+
+```cpp
+counterDisplay = Text(Point(0, 0), "Clicks: 0", 3, Colors::White);
+```
+
+The `Text` widget displays text. Parameters are: position, text content, font size, and color.
+
+```cpp
+auto button = Button(
+    ButtonConfig(0, 0, 150, 50, "Click Me!")
+        .style(ButtonStyle()
+            .normalColor(Colors::Blue)
+            .hoverColor(Colors::LightBlue)
+            .pressColor(Colors::DarkBlue)
+            .textColor(Colors::White)
+            .textScale(2)
+        )
+);
+```
+
+The `Button` widget uses a builder pattern with `ButtonConfig` and `ButtonStyle` to configure appearance and behavior.
+
+### 3. Event Handling
+
+```cpp
+button->onClick.connect([]() {
+    clickCount++;
+    counterDisplay->setText("Clicks: " + std::to_string(clickCount));
+});
+```
+
+Fern uses a **signal-slot system** for events. Connect lambda functions to handle clicks and update the UI dynamically.
+
+### 4. Layout System
+
+```cpp
+std::vector<std::shared_ptr<Widget>> children = {
+    counterDisplay,
+    SizedBox(0, 30),  // Vertical spacing
+    button,
+    SizedBox(0, 20),
+    resetButton
+};
+
+addWidget(Center(Column(children)));
+```
+
+- **Column**: Arranges widgets vertically
+- **SizedBox**: Adds spacing between widgets
+- **Center**: Centers the entire column on screen
+
+### 5. Rendering Loop
+
+```cpp
+void draw() {
+    Draw::fill(Colors::DarkBlue);
+}
+
+int main() {
+    Fern::initialize();
+    setupUI();
+    Fern::setDrawCallback(draw);
+    Fern::startRenderLoop();
+    return 0;
+}
+```
+
+- `Fern::initialize()`: Initializes the window (default 800x600)
+- `setupUI()`: Creates and positions widgets
+- `setDrawCallback()`: Registers the background drawing function
+- `startRenderLoop()`: Begins the event loop
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Explore Widgets" icon="cube" href="/widgets/overview">
+    Learn about Text, Button, Slider, Progress Bar, and more
+  </Card>
+  <Card title="Master Layouts" icon="table-cells" href="/guides/layouts">
+    Create complex UIs with Row, Column, Padding, and Expanded
+  </Card>
+  <Card title="Creating Widgets" icon="code" href="/guides/creating-widgets">
+    Build custom widgets for your application
+  </Card>
+  <Card title="Deploy to Web" icon="globe" href="/platform/web-wasm">
+    Compile your app to WebAssembly for browser deployment
+  </Card>
+</CardGroup>
+
+## Pro Tips
+
+<Tip>
+**Hot Reload**: During development, use `fern fire` to automatically rebuild when you save changes.
+</Tip>
+
+<Info>
+**Window Size**: Pass dimensions to `Fern::initialize()` to customize window size:
+```cpp
+Fern::initialize(900, 700);  // 900x700 window
+```
+</Info>
+
+<Warning>
+Always store widget references (like `counterDisplay`) as `std::shared_ptr<Widget>` to ensure proper memory management.
+</Warning>
+
+## Common Patterns
+
+### Creating Reusable Button Styles
+
+```cpp
+ButtonStyle createModernButton(uint32_t color) {
+    ButtonStyle style;
+    style.normalColor(color)
+         .hoverColor(color + 0x00202020)  // Slightly lighter
+         .pressColor(color - 0x00202020)  // Slightly darker
+         .textColor(Colors::White)
+         .textScale(2)
+         .borderRadius(12);
+    return style;
+}
+```
+
+### Custom Colors
+
+```cpp
+const uint32_t MyBlue = 0xFF3B82F6;  // ARGB format
+const uint32_t MyGreen = 0xFF10B981;
+const uint32_t MyRed = 0xFFEF4444;
+```
+
+### Responsive Layouts
+
+```cpp
+int width = Fern::getWidth();
+int height = Fern::getHeight();
+
+auto centerWidget = std::make_shared<CenterWidget>(0, 0, width, height);
+```
+
+Congratulations! You've built your first Fern application. Continue exploring the documentation to learn more advanced features.

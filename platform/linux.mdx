@@ -1,0 +1,262 @@
+---
+title: Linux Platform
+description: Building and running Fern on Linux with X11
+---
+
+Fern uses X11 for native rendering on Linux. The Linux renderer provides full support for window management, event handling, and pixel-perfect rendering.
+
+## Prerequisites
+
+### Required Dependencies
+
+The Linux build requires X11 development libraries:
+
+<Tabs>
+  <Tab title="Ubuntu/Debian">
+    ```bash
+    sudo apt-get install libx11-dev libfontconfig1-dev libfreetype6-dev
+    ```
+  </Tab>
+  <Tab title="Fedora/RHEL">
+    ```bash
+    sudo dnf install libX11-devel fontconfig-devel freetype-devel
+    ```
+  </Tab>
+  <Tab title="Arch Linux">
+    ```bash
+    sudo pacman -S libx11 fontconfig freetype2
+    ```
+  </Tab>
+</Tabs>
+
+### Build Tools
+
+Ensure you have CMake and a C++17 compiler:
+
+```bash
+sudo apt-get install cmake g++ pkg-config
+```
+
+## Building for Linux
+
+### Using the Build Script
+
+The quickest way to build for Linux:
+
+```bash build.sh
+./build.sh linux
+```
+
+Build a specific example:
+
+```bash
+./build.sh linux platform_test
+```
+
+Build in debug mode:
+
+```bash
+./build.sh --debug linux
+```
+
+### Using CMake Directly
+
+```bash
+mkdir build && cd build
+cmake ..
+cmake --build .
+```
+
+## Linux Renderer Implementation
+
+The Linux renderer (`linux_renderer.cpp`) implements the `PlatformRenderer` interface using X11.
+
+### Key Features
+
+<AccordionGroup>
+  <Accordion title="X11 Window Management">
+    Creates a native X11 window with support for:
+    - Window resizing
+    - Close events (WM_DELETE_WINDOW)
+    - Focus management (WM_TAKE_FOCUS)
+    - Window title updates
+  </Accordion>
+
+  <Accordion title="Direct Pixel Rendering">
+    Uses `XImage` for direct pixel buffer manipulation:
+    ```cpp linux_renderer.cpp:316-325
+    ximage_ = XCreateImage(
+        display_, DefaultVisual(display_, screen), DefaultDepth(display_, screen),
+        ZPixmap, 0, (char*)pixelBuffer_, width_, height_, 32, 0
+    );
+    ```
+  </Accordion>
+
+  <Accordion title="Input Method Support">
+    Supports complex text input using X Input Method (XIM):
+    ```cpp linux_renderer.cpp:122-134
+    xim_ = XOpenIM(display_, nullptr, nullptr, nullptr);
+    xic_ = XCreateIC(xim_,
+                    XNInputStyle, XIMPreeditNothing | XIMStatusNothing,
+                    XNClientWindow, window_,
+                    XNFocusWindow, window_,
+                    nullptr);
+    ```
+  </Accordion>
+
+  <Accordion title="Event Handling">
+    Processes X11 events including:
+    - Mouse motion and clicks
+    - Keyboard input (key presses, text input)
+    - Window resize and configuration
+    - Focus changes
+  </Accordion>
+</AccordionGroup>
+
+### Compilation Flags
+
+The build script uses these flags for Linux:
+
+```bash build.sh:139-146
+LINUX_FLAGS="-std=c++17 -D__linux__ -I$SRC_DIR/include"
+LINUX_LIBS="-lX11"
+
+if [[ "$BUILD_TYPE" == "Debug" ]]; then
+    LINUX_FLAGS="$LINUX_FLAGS -g -O0 -DDEBUG"
+else
+    LINUX_FLAGS="$LINUX_FLAGS -O3 -DNDEBUG"
+fi
+```
+
+### CMake Configuration
+
+CMake automatically finds X11 libraries:
+
+```cmake CMakeLists.txt:84-98
+elseif(UNIX AND NOT APPLE)
+    find_package(X11 REQUIRED)
+    target_link_libraries(fern PUBLIC ${X11_LIBRARIES})
+    target_include_directories(fern PUBLIC ${X11_INCLUDE_DIR})
+    
+    # Find fontconfig and freetype on Linux
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(FONTCONFIG REQUIRED fontconfig)
+    pkg_check_modules(FREETYPE REQUIRED freetype2)
+    
+    target_link_libraries(fern PUBLIC ${FONTCONFIG_LIBRARIES} ${FREETYPE_LIBRARIES})
+    target_include_directories(fern PUBLIC ${FONTCONFIG_INCLUDE_DIRS} ${FREETYPE_INCLUDE_DIRS})
+    target_compile_options(fern PUBLIC ${FONTCONFIG_CFLAGS_OTHER} ${FREETYPE_CFLAGS_OTHER})
+endif()
+```
+
+## Key Code Translation
+
+The Linux renderer translates X11 KeySyms to Fern's cross-platform KeyCode enum:
+
+```cpp linux_renderer.cpp:34-83
+KeyCode translateXKeyToFernKey(KeySym keysym) {
+    switch (keysym) {
+        case XK_Return: return KeyCode::Enter;
+        case XK_Escape: return KeyCode::Escape;
+        case XK_space: return KeyCode::Space;
+        case XK_BackSpace: return KeyCode::Backspace;
+        case XK_Tab: return KeyCode::Tab;
+        case XK_Left: return KeyCode::ArrowLeft;
+        case XK_Right: return KeyCode::ArrowRight;
+        case XK_Up: return KeyCode::ArrowUp;
+        case XK_Down: return KeyCode::ArrowDown;
+        case XK_a: case XK_A: return KeyCode::A;
+        // ... (full alphabet and numbers)
+        default: return KeyCode::Unknown;
+    }
+}
+```
+
+## Running Linux Applications
+
+After building, run the executable:
+
+```bash
+./build/linux/platform_test
+```
+
+<Warning>
+Make sure your `DISPLAY` environment variable is set. If running over SSH, use X forwarding:
+```bash
+ssh -X user@host
+```
+</Warning>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Cannot connect to X server">
+    **Error**: `Cannot connect to X server. Is DISPLAY set?`
+    
+    **Solution**: Ensure DISPLAY is set:
+    ```bash
+    echo $DISPLAY
+    export DISPLAY=:0
+    ```
+  </Accordion>
+
+  <Accordion title="Missing X11 libraries">
+    **Error**: `X11/Xlib.h: No such file or directory`
+    
+    **Solution**: Install X11 development packages:
+    ```bash
+    sudo apt-get install libx11-dev
+    ```
+  </Accordion>
+
+  <Accordion title="Font rendering issues">
+    **Error**: Font-related compilation or runtime errors
+    
+    **Solution**: Install fontconfig and freetype:
+    ```bash
+    sudo apt-get install libfontconfig1-dev libfreetype6-dev
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Performance Considerations
+
+### Pixel Buffer Updates
+
+The renderer uses `memcpy` for efficient pixel buffer transfers:
+
+```cpp linux_renderer.cpp:174
+memcpy(pixelBuffer_, pixelBuffer, bufferSize);
+```
+
+### Event Processing
+
+Events are processed in batches during `pollEvents()`:
+
+```cpp linux_renderer.cpp:196-198
+while (XPending(display_) > 0) {
+    XNextEvent(display_, &event);
+    // Process event...
+}
+```
+
+## Platform Detection at Runtime
+
+Your application can query the platform at runtime:
+
+```cpp
+auto renderer = Fern::createRenderer();
+std::cout << renderer->getPlatformName() << std::endl;
+// Output: "Linux (X11)"
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Web/WASM" icon="globe" href="/platform/web-wasm">
+    Compile the same code to WebAssembly
+  </Card>
+  <Card title="Platform Overview" icon="laptop" href="/platform/overview">
+    Learn about cross-platform architecture
+  </Card>
+</CardGroup>

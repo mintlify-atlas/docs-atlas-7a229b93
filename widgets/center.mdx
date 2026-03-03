@@ -1,0 +1,248 @@
+---
+title: Center Widget
+description: Center a widget within its container
+---
+
+CenterWidget positions its child widget at the center of the available space, automatically handling responsive resizing.
+
+## Basic Usage
+
+```cpp
+#include <fern/fern.hpp>
+
+using namespace Fern;
+
+auto text = Text(Point(0, 0), "Centered Text", 3, Colors::White);
+auto centered = Center(text);
+```
+
+## Constructor
+
+```cpp
+CenterWidget(int x, int y, int width, int height)
+```
+
+<ParamField path="x" type="int">
+  X position of the center container
+</ParamField>
+
+<ParamField path="y" type="int">
+  Y position of the center container
+</ParamField>
+
+<ParamField path="width" type="int">
+  Width of the center container
+</ParamField>
+
+<ParamField path="height" type="int">
+  Height of the center container
+</ParamField>
+
+## Factory Function
+
+```cpp
+std::shared_ptr<CenterWidget> Center(
+    std::shared_ptr<Widget> child,
+    bool addToManager = false
+)
+```
+
+<ParamField path="child" type="std::shared_ptr<Widget>">
+  The widget to center
+</ParamField>
+
+<ParamField path="addToManager" type="bool" default="false">
+  Whether to add to the widget manager
+</ParamField>
+
+## Methods
+
+### Adding Children
+
+```cpp
+void add(std::shared_ptr<Widget> child)
+```
+
+### Responsive Resizing
+
+```cpp
+void onWindowResize(int newWidth, int newHeight)
+```
+
+CenterWidget implements `ResponsiveWidget` and automatically recenters when the window is resized.
+
+## Examples
+
+### Center a Text Widget
+
+```cpp
+auto text = Text(Point(0, 0), "Hello, Fern!", 3, Colors::White);
+auto centered = Center(text);
+addWidget(centered);
+```
+
+### Center a Button
+
+```cpp
+auto button = Button(ButtonConfig(0, 0, 120, 40, "Click Me"));
+auto centered = Center(button);
+```
+
+### Center on Full Screen
+
+```cpp
+int width = Fern::getWidth();
+int height = Fern::getHeight();
+
+auto centerWidget = std::make_shared<CenterWidget>(0, 0, width, height);
+centerWidget->add(Text(Point(0, 0), "Centered", 3, Colors::White));
+
+addWidget(centerWidget);
+```
+
+### Center a Column Layout
+
+```cpp
+auto column = Column({
+    Text(Point(0, 0), "Title", 3, Colors::White),
+    SizedBox(0, 20),
+    Button(ButtonConfig(0, 0, 100, 30, "Click"))
+});
+
+auto centered = Center(column);
+```
+
+### Center a Row Layout
+
+```cpp
+auto row = Row({
+    Button(ButtonConfig(0, 0, 80, 30, "OK")),
+    SizedBox(10, 0),
+    Button(ButtonConfig(0, 0, 80, 30, "Cancel"))
+});
+
+auto centered = Center(row);
+```
+
+### Center Complex Layout
+
+```cpp
+auto title = Text(Point(0, 0), "Welcome", 4, Colors::White);
+auto subtitle = Text(Point(0, 0), "Please sign in", 2, Colors::Gray);
+
+auto usernameInput = TextInput(TextInputConfig(0, 0, 250, 35)
+    .placeholder("Username"));
+auto passwordInput = TextInput(TextInputConfig(0, 0, 250, 35)
+    .placeholder("Password"));
+
+auto loginBtn = Button(ButtonConfig(0, 0, 250, 40, "Login"));
+
+auto loginForm = Column({
+    title,
+    SizedBox(0, 10),
+    subtitle,
+    SizedBox(0, 40),
+    usernameInput,
+    SizedBox(0, 15),
+    passwordInput,
+    SizedBox(0, 25),
+    loginBtn
+});
+
+auto centered = Center(loginForm);
+addWidget(centered);
+```
+
+### Center in a Region
+
+```cpp
+// Center within a specific region (not full screen)
+auto centerWidget = std::make_shared<CenterWidget>(100, 100, 400, 300);
+centerWidget->add(Text(Point(0, 0), "In Region", 2, Colors::White));
+```
+
+## Complete Example
+
+From `examples/cpp/new/01_hello_text.cpp`:
+
+```cpp
+#include <fern/fern.hpp>
+
+using namespace Fern;
+
+void setupUI() {
+    int width = Fern::getWidth();
+    int height = Fern::getHeight();
+    
+    auto centerWidget = std::make_shared<CenterWidget>(0, 0, width, height);
+    centerWidget->add(Text(Point(0, 0), "Hello, Fern!", 3, Colors::White));
+    
+    addWidget(centerWidget);
+}
+
+void draw() {
+    Draw::fill(Colors::DarkBlue);
+}
+
+int main() {
+    Fern::initialize();
+    setupUI();
+    Fern::setDrawCallback(draw);
+    Fern::startRenderLoop();
+    return 0;
+}
+```
+
+## Responsive Behavior
+
+CenterWidget automatically responds to window resize events:
+
+```cpp
+auto text = Text(Point(0, 0), "Always Centered", 3, Colors::White);
+auto centered = Center(text);
+
+// Text will remain centered even if window is resized
+```
+
+## Use Cases
+
+- **Welcome screens** - Center title and login forms
+- **Loading screens** - Center loading indicators
+- **Dialog boxes** - Center modal content
+- **Single-widget displays** - Center primary content
+- **Responsive layouts** - Maintain centering across screen sizes
+
+## Best Practices
+
+### Create Children at (0, 0)
+
+When using Center, create child widgets at position (0, 0):
+
+```cpp
+// Good
+auto widget = Text(Point(0, 0), "Text", 2, Colors::White);
+auto centered = Center(widget);
+
+// Avoid
+auto widget = Text(Point(100, 50), "Text", 2, Colors::White);
+auto centered = Center(widget);  // Will offset from center
+```
+
+### Combine with Layout Widgets
+
+Center works well with Column and Row:
+
+```cpp
+auto layout = Column({
+    Text(Point(0, 0), "Title", 3, Colors::White),
+    Button(ButtonConfig(0, 0, 100, 30, "Click"))
+});
+
+auto centered = Center(layout);
+```
+
+## See Also
+
+- [Row & Column](/widgets/row-column) - Arrange multiple widgets
+- [Padding](/widgets/padding) - Add space around widgets
+- [SizedBox](/widgets/sized-box) - Fixed-size spacing

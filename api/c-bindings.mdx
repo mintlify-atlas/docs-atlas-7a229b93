@@ -1,0 +1,566 @@
+---
+title: C API Bindings
+description: C language bindings for the Fern UI Framework
+---
+
+The Fern C API provides a C-compatible interface for using Fern in C projects and WebAssembly applications. This API is designed for simplicity and ease of integration with C codebases and web environments.
+
+## Core Types
+
+### Point
+
+```c
+typedef struct Point {
+    int x;
+    int y;
+} Point;
+```
+
+Represents a 2D point with integer coordinates.
+
+```c
+Point Point_create(int x, int y);
+```
+
+### FernCanvas
+
+```c
+typedef struct FernCanvas {
+    uint32_t* pixels;
+    size_t height;
+    size_t width;
+} FernCanvas;
+```
+
+Represents the canvas pixel buffer.
+
+### InputState
+
+```c
+typedef struct InputState {
+    int mouse_x;
+    int mouse_y;
+    int mouse_down;
+    int mouse_clicked;
+} InputState;
+```
+
+Contains current mouse input state.
+
+### ButtonConfig
+
+```c
+typedef struct ButtonConfig {
+    int x;
+    int y;
+    int width;
+    int height;
+    uint32_t normal_color;
+    uint32_t hover_color;
+    uint32_t press_color;
+    const char* label;
+    int text_scale;
+    uint32_t text_color;
+    ButtonCallback on_click;
+} ButtonConfig;
+```
+
+Configuration for button widgets.
+
+### GradientStop
+
+```c
+typedef struct GradientStop {
+    uint32_t color;
+    float position;  // 0-1
+} GradientStop;
+```
+
+Defines a color stop in a gradient.
+
+### LinearGradient
+
+```c
+typedef struct LinearGradient {
+    GradientStop* stops;
+    int stop_count;
+    int direction;  // 0 = horizontal, 1 = vertical
+} LinearGradient;
+```
+
+Defines a linear gradient.
+
+## Color Constants
+
+```c
+#define Colors_green  0xFF00FF00
+#define Colors_blue   0xFF0000FF
+#define Colors_red    0xFFFF0000
+#define Colors_gray   0xFF202020
+#define Colors_black  0xFF000000
+#define Colors_white  0xFFFFFFFF
+```
+
+## Gradient Constants
+
+```c
+#define GRADIENT_HORIZONTAL 0
+#define GRADIENT_VERTICAL   1
+```
+
+## Initialization
+
+### fern_init_wasm()
+
+```c
+void fern_init_wasm(uint32_t* pixel_buffer, size_t height, size_t width)
+```
+
+Initializes the Fern framework for WebAssembly.
+
+<ParamField path="pixel_buffer" type="uint32_t*" required>
+  Pointer to the pixel buffer array
+</ParamField>
+
+<ParamField path="height" type="size_t" required>
+  Canvas height in pixels
+</ParamField>
+
+<ParamField path="width" type="size_t" required>
+  Canvas width in pixels
+</ParamField>
+
+### runApp()
+
+```c
+void runApp(FernCanvas canvas)
+```
+
+Initializes and runs the Fern application.
+
+<ParamField path="canvas" type="FernCanvas" required>
+  Canvas structure containing pixel buffer and dimensions
+</ParamField>
+
+## Drawing Functions
+
+### ffill()
+
+```c
+void ffill(uint32_t* pixels, size_t height, size_t width, uint32_t color)
+```
+
+Fills the entire canvas with a solid color.
+
+<ParamField path="pixels" type="uint32_t*" required>
+  Pixel buffer array
+</ParamField>
+
+<ParamField path="height" type="size_t" required>
+  Canvas height
+</ParamField>
+
+<ParamField path="width" type="size_t" required>
+  Canvas width
+</ParamField>
+
+<ParamField path="color" type="uint32_t" required>
+  Fill color (0xAABBGGRR format)
+</ParamField>
+
+### frect()
+
+```c
+void frect(uint32_t* pixels, size_t height, size_t width, uint32_t color, 
+          size_t x, size_t y, size_t w, size_t h)
+```
+
+Draws a filled rectangle.
+
+<ParamField path="pixels" type="uint32_t*" required>
+  Pixel buffer array
+</ParamField>
+
+<ParamField path="height" type="size_t" required>
+  Canvas height
+</ParamField>
+
+<ParamField path="width" type="size_t" required>
+  Canvas width
+</ParamField>
+
+<ParamField path="color" type="uint32_t" required>
+  Rectangle color
+</ParamField>
+
+<ParamField path="x" type="size_t" required>
+  Rectangle x position
+</ParamField>
+
+<ParamField path="y" type="size_t" required>
+  Rectangle y position
+</ParamField>
+
+<ParamField path="w" type="size_t" required>
+  Rectangle width
+</ParamField>
+
+<ParamField path="h" type="size_t" required>
+  Rectangle height
+</ParamField>
+
+### fcircle()
+
+```c
+void fcircle(uint32_t* pixels, size_t height, size_t width, uint32_t color, 
+            size_t cx, size_t cy, size_t r)
+```
+
+Draws a filled circle.
+
+<ParamField path="pixels" type="uint32_t*" required>
+  Pixel buffer array
+</ParamField>
+
+<ParamField path="height" type="size_t" required>
+  Canvas height
+</ParamField>
+
+<ParamField path="width" type="size_t" required>
+  Canvas width
+</ParamField>
+
+<ParamField path="color" type="uint32_t" required>
+  Circle color
+</ParamField>
+
+<ParamField path="cx" type="size_t" required>
+  Circle center x
+</ParamField>
+
+<ParamField path="cy" type="size_t" required>
+  Circle center y
+</ParamField>
+
+<ParamField path="r" type="size_t" required>
+  Circle radius
+</ParamField>
+
+### fline()
+
+```c
+void fline(uint32_t* pixels, size_t height, size_t width, uint32_t color, 
+          int x1, int y1, int x2, int y2, int thickness)
+```
+
+Draws a line between two points using Bresenham's algorithm.
+
+<ParamField path="pixels" type="uint32_t*" required>
+  Pixel buffer array
+</ParamField>
+
+<ParamField path="height" type="size_t" required>
+  Canvas height
+</ParamField>
+
+<ParamField path="width" type="size_t" required>
+  Canvas width
+</ParamField>
+
+<ParamField path="color" type="uint32_t" required>
+  Line color
+</ParamField>
+
+<ParamField path="x1" type="int" required>
+  Start point x
+</ParamField>
+
+<ParamField path="y1" type="int" required>
+  Start point y
+</ParamField>
+
+<ParamField path="x2" type="int" required>
+  End point x
+</ParamField>
+
+<ParamField path="y2" type="int" required>
+  End point y
+</ParamField>
+
+<ParamField path="thickness" type="int" required>
+  Line thickness in pixels
+</ParamField>
+
+## Text Rendering
+
+### fchar()
+
+```c
+void fchar(uint32_t* pixels, int width, int height, char c, int x, int y, int scale, uint32_t color)
+```
+
+Renders a single character.
+
+<ParamField path="pixels" type="uint32_t*" required>
+  Pixel buffer array
+</ParamField>
+
+<ParamField path="width" type="int" required>
+  Canvas width
+</ParamField>
+
+<ParamField path="height" type="int" required>
+  Canvas height
+</ParamField>
+
+<ParamField path="c" type="char" required>
+  Character to render (A-Z, 0-9)
+</ParamField>
+
+<ParamField path="x" type="int" required>
+  X position
+</ParamField>
+
+<ParamField path="y" type="int" required>
+  Y position
+</ParamField>
+
+<ParamField path="scale" type="int" required>
+  Character scale factor
+</ParamField>
+
+<ParamField path="color" type="uint32_t" required>
+  Text color
+</ParamField>
+
+### ftext()
+
+```c
+void ftext(uint32_t* pixels, int width, int height, const char* text, int x, int y, int scale, uint32_t color)
+```
+
+Renders a text string.
+
+<ParamField path="pixels" type="uint32_t*" required>
+  Pixel buffer array
+</ParamField>
+
+<ParamField path="width" type="int" required>
+  Canvas width
+</ParamField>
+
+<ParamField path="height" type="int" required>
+  Canvas height
+</ParamField>
+
+<ParamField path="text" type="const char*" required>
+  Text string to render
+</ParamField>
+
+<ParamField path="x" type="int" required>
+  X position
+</ParamField>
+
+<ParamField path="y" type="int" required>
+  Y position
+</ParamField>
+
+<ParamField path="scale" type="int" required>
+  Text scale factor
+</ParamField>
+
+<ParamField path="color" type="uint32_t" required>
+  Text color
+</ParamField>
+
+## Widget Functions
+
+### Container()
+
+```c
+void Container(uint32_t color, int x, int y, int width, int height)
+```
+
+Draws a rectangular container.
+
+### CenteredContainer()
+
+```c
+void CenteredContainer(int width, int height, uint32_t color)
+```
+
+Draws a centered rectangular container.
+
+### CircleWidget()
+
+```c
+void CircleWidget(int radius, Point position, uint32_t color)
+```
+
+Draws a circle widget.
+
+### LineWidget()
+
+```c
+void LineWidget(Point start, Point end, int thickness, uint32_t color)
+```
+
+Draws a line widget.
+
+### TextWidget()
+
+```c
+void TextWidget(Point start, const char* text, int scale, uint32_t color)
+```
+
+Draws a text widget.
+
+### ButtonWidget()
+
+```c
+void ButtonWidget(ButtonConfig config)
+```
+
+Draws an interactive button widget.
+
+### LinearGradientContainer()
+
+```c
+void LinearGradientContainer(int x, int y, int width, int height, LinearGradient gradient)
+```
+
+Draws a container with a linear gradient.
+
+## Color Functions
+
+### fblend_color()
+
+```c
+uint32_t fblend_color(uint32_t color1, uint32_t color2, float t)
+```
+
+Blends two colors together.
+
+<ParamField path="color1" type="uint32_t" required>
+  First color
+</ParamField>
+
+<ParamField path="color2" type="uint32_t" required>
+  Second color
+</ParamField>
+
+<ParamField path="t" type="float" required>
+  Blend factor (0.0 to 1.0)
+</ParamField>
+
+<ResponseField name="return" type="uint32_t">
+  Blended color
+</ResponseField>
+
+### gradient_color_at()
+
+```c
+uint32_t gradient_color_at(LinearGradient grad, float position)
+```
+
+Calculates the color at a position in a gradient.
+
+<ParamField path="grad" type="LinearGradient" required>
+  Gradient definition
+</ParamField>
+
+<ParamField path="position" type="float" required>
+  Position in gradient (0.0 to 1.0)
+</ParamField>
+
+<ResponseField name="return" type="uint32_t">
+  Color at the position
+</ResponseField>
+
+## Render Loop
+
+### fern_set_draw_callback()
+
+```c
+void fern_set_draw_callback(FernDrawCallback callback)
+```
+
+Sets the draw callback function for the render loop.
+
+<ParamField path="callback" type="FernDrawCallback" required>
+  Function pointer to draw callback
+</ParamField>
+
+### fern_start_render_loop()
+
+```c
+void fern_start_render_loop(void)
+```
+
+Starts the main render loop (WebAssembly only).
+
+## Input Functions
+
+### update_mouse_position()
+
+```c
+void update_mouse_position(int x, int y)
+```
+
+Updates the mouse position (called by event handlers).
+
+### update_mouse_button()
+
+```c
+void update_mouse_button(int down)
+```
+
+Updates the mouse button state (called by event handlers).
+
+### reset_input_events()
+
+```c
+void reset_input_events(void)
+```
+
+Resets frame-specific input events.
+
+## Utility Functions
+
+### fernPrintf()
+
+```c
+void fernPrintf(const char* string)
+```
+
+Prints a debug message to console.
+
+<ParamField path="string" type="const char*" required>
+  Message to print
+</ParamField>
+
+## Example Usage
+
+```c
+#include <stdint.h>
+
+// Create canvas
+uint32_t pixels[800 * 600];
+FernCanvas canvas = { pixels, 600, 800 };
+
+// Draw callback
+void draw() {
+    ffill(canvas.pixels, canvas.height, canvas.width, Colors_gray);
+    
+    Container(Colors_blue, 50, 50, 200, 100);
+    CircleWidget(25, Point_create(150, 100), Colors_red);
+    TextWidget(Point_create(100, 200), "HELLO", 2, Colors_white);
+}
+
+int main() {
+    runApp(canvas);
+    fern_set_draw_callback(draw);
+    fern_start_render_loop();
+    return 0;
+}
+```

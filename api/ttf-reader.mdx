@@ -1,0 +1,445 @@
+---
+title: TTFReader
+description: TrueType font file parser and glyph extractor
+---
+
+The TTFReader class provides low-level parsing and reading of TrueType font (.ttf) files. It extracts glyph outlines, font metrics, and character mappings from TTF files.
+
+## Structures
+
+### TTFHeader
+
+```cpp
+struct TTFHeader {
+    uint32_t scalerType;
+    uint16_t numTables;
+    uint16_t searchRange;
+    uint16_t entrySelector;
+    uint16_t rangeShift;
+};
+```
+
+Represents the TTF file header (Offset Table).
+
+### GlyphHeader
+
+```cpp
+struct GlyphHeader {
+    int16_t numberOfContours;
+    int16_t xMin, yMin, xMax, yMax;
+};
+```
+
+Contains metadata for a single glyph.
+
+### TTFPoint
+
+```cpp
+struct TTFPoint {
+    int16_t x, y;
+    bool onCurve;
+};
+```
+
+Represents a point in a glyph outline.
+
+### SimpleGlyph
+
+```cpp
+struct SimpleGlyph {
+    GlyphHeader header;
+    std::vector<uint16_t> endPtsOfContours;
+    std::vector<TTFPoint> points;
+};
+```
+
+Complete simple glyph data including outline points.
+
+### BezierPoint
+
+```cpp
+struct BezierPoint {
+    float x, y;
+    BezierPoint(float x = 0, float y = 0);
+};
+```
+
+Floating-point coordinate for Bezier curve calculations.
+
+### TableEntry
+
+```cpp
+struct TableEntry {
+    char tag[5];
+    uint32_t checksum;
+    uint32_t offset;
+    uint32_t length;
+};
+```
+
+Represents a table directory entry in the TTF file.
+
+## Constructor & Destructor
+
+```cpp
+TTFReader();
+~TTFReader();
+```
+
+## File Operations
+
+### openFont()
+
+```cpp
+bool openFont(const std::string& filename)
+```
+
+Opens a TrueType font file for reading.
+
+<ParamField path="filename" type="const std::string&" required>
+  Path to the .ttf font file
+</ParamField>
+
+<ResponseField name="return" type="bool">
+  True if file opened successfully, false otherwise
+</ResponseField>
+
+```cpp
+TTFReader reader;
+if (reader.openFont("font.ttf")) {
+    // Process font
+}
+```
+
+### close()
+
+```cpp
+void close()
+```
+
+Closes the currently open font file.
+
+## Header and Table Operations
+
+### readHeader()
+
+```cpp
+bool readHeader(TTFHeader& header)
+```
+
+Reads the TTF file header.
+
+<ParamField path="header" type="TTFHeader&" required>
+  Reference to header structure to fill
+</ParamField>
+
+<ResponseField name="return" type="bool">
+  True if header read successfully
+</ResponseField>
+
+### readTableEntry()
+
+```cpp
+bool readTableEntry(TableEntry& entry)
+```
+
+Reads a table directory entry.
+
+<ParamField path="entry" type="TableEntry&" required>
+  Reference to entry structure to fill
+</ParamField>
+
+<ResponseField name="return" type="bool">
+  True if entry read successfully
+</ResponseField>
+
+### findTable()
+
+```cpp
+bool findTable(const std::string& tableName, TableEntry& entry)
+```
+
+Finds a specific table in the TTF file.
+
+<ParamField path="tableName" type="const std::string&" required>
+  Name of the table (e.g., "glyf", "cmap", "head")
+</ParamField>
+
+<ParamField path="entry" type="TableEntry&" required>
+  Reference to entry structure to fill
+</ParamField>
+
+<ResponseField name="return" type="bool">
+  True if table found
+</ResponseField>
+
+### seekToTable()
+
+```cpp
+bool seekToTable(const std::string& tableName)
+```
+
+Seeks to the beginning of a specific table.
+
+<ParamField path="tableName" type="const std::string&" required>
+  Name of the table to seek to
+</ParamField>
+
+<ResponseField name="return" type="bool">
+  True if table found and seeked successfully
+</ResponseField>
+
+## Glyph Operations
+
+### readGlyphHeader()
+
+```cpp
+bool readGlyphHeader(GlyphHeader& header)
+```
+
+Reads a glyph header from the current file position.
+
+<ParamField path="header" type="GlyphHeader&" required>
+  Reference to header structure to fill
+</ParamField>
+
+<ResponseField name="return" type="bool">
+  True if header read successfully
+</ResponseField>
+
+### readSimpleGlyph()
+
+```cpp
+bool readSimpleGlyph(SimpleGlyph& glyph)
+```
+
+Reads a complete simple glyph including all outline points.
+
+<ParamField path="glyph" type="SimpleGlyph&" required>
+  Reference to glyph structure to fill
+</ParamField>
+
+<ResponseField name="return" type="bool">
+  True if glyph read successfully
+</ResponseField>
+
+### readGlyphByIndex()
+
+```cpp
+bool readGlyphByIndex(int glyphIndex, SimpleGlyph& glyph)
+```
+
+Reads a glyph by its index in the font.
+
+<ParamField path="glyphIndex" type="int" required>
+  Index of the glyph to read
+</ParamField>
+
+<ParamField path="glyph" type="SimpleGlyph&" required>
+  Reference to glyph structure to fill
+</ParamField>
+
+<ResponseField name="return" type="bool">
+  True if glyph read successfully
+</ResponseField>
+
+### loadLocaTable()
+
+```cpp
+bool loadLocaTable()
+```
+
+Loads the 'loca' table which contains glyph offsets.
+
+<ResponseField name="return" type="bool">
+  True if table loaded successfully
+</ResponseField>
+
+## Character Mapping
+
+### loadCmapTable()
+
+```cpp
+bool loadCmapTable()
+```
+
+Loads the 'cmap' table for character to glyph mapping.
+
+<ResponseField name="return" type="bool">
+  True if table loaded successfully
+</ResponseField>
+
+### getGlyphIndex()
+
+```cpp
+uint16_t getGlyphIndex(uint32_t unicode)
+```
+
+Converts a Unicode character code to a glyph index.
+
+<ParamField path="unicode" type="uint32_t" required>
+  Unicode code point
+</ParamField>
+
+<ResponseField name="return" type="uint16_t">
+  Glyph index for the character
+</ResponseField>
+
+```cpp
+uint16_t glyphIndex = reader.getGlyphIndex('A');
+```
+
+## Font Metrics
+
+### loadHeadTable()
+
+```cpp
+bool loadHeadTable()
+```
+
+Loads the 'head' table containing font metrics.
+
+<ResponseField name="return" type="bool">
+  True if table loaded successfully
+</ResponseField>
+
+### getUnitsPerEm()
+
+```cpp
+uint16_t getUnitsPerEm() const
+```
+
+<ResponseField name="return" type="uint16_t">
+  Number of font units per em square
+</ResponseField>
+
+## Bezier Curve Operations
+
+### quadraticBezier()
+
+```cpp
+BezierPoint quadraticBezier(const BezierPoint& start, const BezierPoint& control, 
+                           const BezierPoint& end, float t)
+```
+
+Calculates a point on a quadratic Bezier curve.
+
+<ParamField path="start" type="const BezierPoint&" required>
+  Start point
+</ParamField>
+
+<ParamField path="control" type="const BezierPoint&" required>
+  Control point
+</ParamField>
+
+<ParamField path="end" type="const BezierPoint&" required>
+  End point
+</ParamField>
+
+<ParamField path="t" type="float" required>
+  Parameter (0.0 to 1.0)
+</ParamField>
+
+<ResponseField name="return" type="BezierPoint">
+  Point on the curve at parameter t
+</ResponseField>
+
+### generateBezierCurve()
+
+```cpp
+std::vector<BezierPoint> generateBezierCurve(const BezierPoint& start, 
+                                             const BezierPoint& control,
+                                             const BezierPoint& end, 
+                                             int resolution = 20)
+```
+
+Generates points along a quadratic Bezier curve.
+
+<ParamField path="start" type="const BezierPoint&" required>
+  Start point
+</ParamField>
+
+<ParamField path="control" type="const BezierPoint&" required>
+  Control point
+</ParamField>
+
+<ParamField path="end" type="const BezierPoint&" required>
+  End point
+</ParamField>
+
+<ParamField path="resolution" type="int" default="20">
+  Number of points to generate
+</ParamField>
+
+<ResponseField name="return" type="std::vector<BezierPoint>">
+  Vector of points along the curve
+</ResponseField>
+
+### generateGlyphOutline()
+
+```cpp
+std::vector<BezierPoint> generateGlyphOutline(const SimpleGlyph& glyph, int resolution = 20)
+```
+
+Generates the complete outline of a glyph as a series of points.
+
+<ParamField path="glyph" type="const SimpleGlyph&" required>
+  Glyph to generate outline for
+</ParamField>
+
+<ParamField path="resolution" type="int" default="20">
+  Number of points per curve segment
+</ParamField>
+
+<ResponseField name="return" type="std::vector<BezierPoint>">
+  Vector of points forming the complete glyph outline
+</ResponseField>
+
+## Utility Methods
+
+### readBytes()
+
+```cpp
+std::vector<uint8_t> readBytes(size_t count)
+```
+
+Reads raw bytes from the current file position.
+
+<ParamField path="count" type="size_t" required>
+  Number of bytes to read
+</ParamField>
+
+<ResponseField name="return" type="std::vector<uint8_t>">
+  Vector of bytes read
+</ResponseField>
+
+## Example Usage
+
+```cpp
+TTFReader reader;
+if (!reader.openFont("font.ttf")) {
+    return;
+}
+
+// Load necessary tables
+reader.loadHeadTable();
+reader.loadLocaTable();
+reader.loadCmapTable();
+
+// Get glyph for character 'A'
+uint16_t glyphIndex = reader.getGlyphIndex('A');
+
+// Read the glyph
+SimpleGlyph glyph;
+if (reader.readGlyphByIndex(glyphIndex, glyph)) {
+    // Generate outline points
+    auto outline = reader.generateGlyphOutline(glyph, 30);
+    
+    // Use outline points for rendering
+    for (const auto& point : outline) {
+        // Render point...
+    }
+}
+
+reader.close();
+```

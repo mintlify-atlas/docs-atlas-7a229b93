@@ -1,0 +1,318 @@
+---
+title: Expanded Widget
+description: Expand widgets to fill available space in flex layouts
+---
+
+ExpandedWidget makes a child widget expand to fill available space within a Row or Column layout. Multiple Expanded widgets share space based on their flex factors.
+
+## Basic Usage
+
+```cpp
+#include <fern/fern.hpp>
+
+using namespace Fern;
+
+auto row = Row({
+    Button(ButtonConfig(0, 0, 80, 30, "Fixed")),
+    Expanded(Button(ButtonConfig(0, 0, 0, 30, "Expanded")))
+});
+```
+
+## Constructor
+
+```cpp
+ExpandedWidget(std::shared_ptr<Widget> child, int flex = 1)
+```
+
+<ParamField path="child" type="std::shared_ptr<Widget>">
+  The widget to expand
+</ParamField>
+
+<ParamField path="flex" type="int" default="1">
+  Flex factor determining how much space to take relative to other Expanded widgets
+</ParamField>
+
+## Factory Function
+
+```cpp
+std::shared_ptr<ExpandedWidget> Expanded(
+    std::shared_ptr<Widget> child,
+    int flex = 1,
+    bool addToManager = false
+)
+```
+
+## Methods
+
+### Flex Factor
+
+```cpp
+int getFlex() const
+```
+
+Returns the flex factor of the widget.
+
+## Examples
+
+### Single Expanded Widget
+
+```cpp
+auto row = Row({
+    Button(ButtonConfig(0, 0, 80, 30, "Fixed")),
+    Expanded(Button(ButtonConfig(0, 0, 0, 30, "Fills Rest")))
+});
+```
+
+### Multiple Expanded Widgets (Equal)
+
+```cpp
+auto row = Row({
+    Expanded(Button(ButtonConfig(0, 0, 0, 30, "First"))),
+    Expanded(Button(ButtonConfig(0, 0, 0, 30, "Second"))),
+    Expanded(Button(ButtonConfig(0, 0, 0, 30, "Third")))
+});
+// Each button takes 1/3 of the available space
+```
+
+### Multiple Expanded Widgets (Different Flex)
+
+```cpp
+auto row = Row({
+    Expanded(Button(ButtonConfig(0, 0, 0, 30, "Small")), 1),
+    Expanded(Button(ButtonConfig(0, 0, 0, 30, "Large")), 2)
+});
+// First button takes 1/3, second button takes 2/3
+```
+
+### Mixed Fixed and Expanded
+
+```cpp
+auto row = Row({
+    Button(ButtonConfig(0, 0, 80, 30, "Fixed 80px")),
+    Expanded(Button(ButtonConfig(0, 0, 0, 30, "Fills Rest"))),
+    Button(ButtonConfig(0, 0, 100, 30, "Fixed 100px"))
+});
+```
+
+### Expanded in Column
+
+```cpp
+auto column = Column({
+    Text(Point(0, 0), "Header", 3, Colors::White),
+    Expanded(TextInput(TextInputConfig(0, 0, 200, 0))),
+    Button(ButtonConfig(0, 0, 200, 40, "Submit"))
+});
+// TextInput expands to fill vertical space
+```
+
+### Three-Column Layout
+
+```cpp
+auto sidebar = Column({
+    Text(Point(0, 0), "Sidebar", 2, Colors::White)
+});
+
+auto content = Column({
+    Text(Point(0, 0), "Main Content", 2, Colors::White)
+});
+
+auto rightPanel = Column({
+    Text(Point(0, 0), "Right Panel", 2, Colors::White)
+});
+
+auto layout = Row({
+    Expanded(sidebar, 1),      // 1/6 of space
+    Expanded(content, 4),      // 4/6 of space
+    Expanded(rightPanel, 1)    // 1/6 of space
+});
+```
+
+### Responsive Button Group
+
+```cpp
+auto buttonGroup = Row({
+    Expanded(Button(ButtonConfig(0, 0, 0, 40, "Save"))),
+    SizedBox(10, 0),
+    Expanded(Button(ButtonConfig(0, 0, 0, 40, "Cancel"))),
+    SizedBox(10, 0),
+    Expanded(Button(ButtonConfig(0, 0, 0, 40, "Delete")))
+});
+// All buttons share available space equally
+```
+
+### Complex Flex Layout
+
+```cpp
+auto toolbar = Row({
+    Button(ButtonConfig(0, 0, 40, 35, "<")),  // Fixed back button
+    SizedBox(10, 0),
+    Expanded(TextInput(TextInputConfig(0, 0, 0, 35)
+        .placeholder("Search..."))),           // Search fills space
+    SizedBox(10, 0),
+    Button(ButtonConfig(0, 0, 80, 35, "Options"))  // Fixed options
+});
+```
+
+### Dashboard Layout
+
+```cpp
+auto topRow = Row({
+    Expanded(Container(Colors::Blue, 0, 0, 0, 100), 1),
+    SizedBox(10, 0),
+    Expanded(Container(Colors::Green, 0, 0, 0, 100), 1),
+    SizedBox(10, 0),
+    Expanded(Container(Colors::Red, 0, 0, 0, 100), 1)
+});
+
+auto bottomRow = Row({
+    Expanded(Container(Colors::Yellow, 0, 0, 0, 150), 2),
+    SizedBox(10, 0),
+    Expanded(Container(Colors::Purple, 0, 0, 0, 150), 1)
+});
+
+auto dashboard = Column({
+    topRow,
+    SizedBox(0, 10),
+    bottomRow
+});
+```
+
+### Nested Expanded Widgets
+
+```cpp
+auto innerRow = Row({
+    Expanded(Button(ButtonConfig(0, 0, 0, 30, "A"))),
+    Expanded(Button(ButtonConfig(0, 0, 0, 30, "B")))
+});
+
+auto outerRow = Row({
+    Button(ButtonConfig(0, 0, 100, 30, "Fixed")),
+    SizedBox(10, 0),
+    Expanded(innerRow)  // Inner row expands and distributes space to A and B
+});
+```
+
+## Complete Example
+
+```cpp
+#include <fern/fern.hpp>
+
+using namespace Fern;
+
+void setupUI() {
+    // Create a responsive toolbar
+    auto backBtn = Button(ButtonConfig(0, 0, 50, 40, "<"));
+    auto searchBox = TextInput(TextInputConfig(0, 0, 0, 40)
+        .placeholder("Search..."));
+    auto settingsBtn = Button(ButtonConfig(0, 0, 100, 40, "Settings"));
+    
+    auto toolbar = Row({
+        backBtn,
+        SizedBox(10, 0),
+        Expanded(searchBox),  // Search box fills remaining space
+        SizedBox(10, 0),
+        settingsBtn
+    });
+    
+    // Create main content area
+    auto content = Column({
+        toolbar,
+        SizedBox(0, 20),
+        Expanded(TextInput(TextInputConfig(0, 0, 0, 0)
+            .placeholder("Content area...")))  // Fills vertical space
+    });
+    
+    auto padded = Padding(content, 20);
+    addWidget(Center(padded));
+}
+```
+
+## Flex Calculation
+
+### Equal Flex (All = 1)
+
+```cpp
+Row({
+    Expanded(widgetA, 1),  // Gets 1/3 of space
+    Expanded(widgetB, 1),  // Gets 1/3 of space
+    Expanded(widgetC, 1)   // Gets 1/3 of space
+})
+// Total flex = 3, each gets 1/3
+```
+
+### Different Flex Values
+
+```cpp
+Row({
+    Expanded(widgetA, 1),  // Gets 1/6 of space
+    Expanded(widgetB, 2),  // Gets 2/6 of space
+    Expanded(widgetC, 3)   // Gets 3/6 of space
+})
+// Total flex = 6, distribution based on ratio
+```
+
+### With Fixed Widgets
+
+```cpp
+Row({
+    Widget(100px),          // Takes 100px
+    Expanded(widgetA, 1),   // Gets half of remaining
+    Expanded(widgetB, 1),   // Gets half of remaining
+    Widget(50px)            // Takes 50px
+})
+// If row is 500px: 100 + (175) + (175) + 50 = 500
+```
+
+## Use Cases
+
+- **Toolbars** - Expandable search boxes with fixed buttons
+- **Responsive layouts** - Widgets that adapt to screen size
+- **Form layouts** - Inputs that fill available width
+- **Dashboard grids** - Flexible card layouts
+- **Navigation** - Expandable content areas
+
+## Best Practices
+
+### Set Child Dimensions to 0
+
+When using Expanded, set the expanding dimension to 0:
+
+```cpp
+// In a Row (horizontal expansion)
+Expanded(Button(ButtonConfig(0, 0, 0, 30, "Text")))  // width = 0
+
+// In a Column (vertical expansion)
+Expanded(Widget(0, 0, 200, 0))  // height = 0
+```
+
+### Use Flex Factors Wisely
+
+Use simple ratios for clarity:
+
+```cpp
+// Good: Simple ratios
+Expanded(widget1, 1)
+Expanded(widget2, 2)
+
+// Avoid: Complex ratios
+Expanded(widget1, 7)
+Expanded(widget2, 13)
+```
+
+### Combine with SizedBox
+
+Use SizedBox for spacing between Expanded widgets:
+
+```cpp
+Row({
+    Expanded(widget1),
+    SizedBox(10, 0),  // 10px gap
+    Expanded(widget2)
+})
+```
+
+## See Also
+
+- [Row & Column](/widgets/row-column) - Container layouts for Expanded
+- [SizedBox](/widgets/sized-box) - Fixed-size spacing
+- [Padding](/widgets/padding) - Add space around widgets

@@ -1,0 +1,336 @@
+---
+title: Row and Column Layout Widgets
+description: Arrange widgets horizontally in rows or vertically in columns
+---
+
+Row and Column widgets are fundamental layout containers that arrange child widgets either horizontally (Row) or vertically (Column) with configurable alignment and spacing.
+
+## RowWidget
+
+Arranges children horizontally from left to right.
+
+### Basic Usage
+
+```cpp
+#include <fern/fern.hpp>
+
+using namespace Fern;
+
+auto row = Row({
+    Button(ButtonConfig(0, 0, 80, 30, "OK")),
+    Button(ButtonConfig(0, 0, 80, 30, "Cancel"))
+});
+```
+
+### Constructor
+
+```cpp
+RowWidget(int x, int y, int width, int height,
+          MainAxisAlignment mainAlignment = MainAxisAlignment::Start,
+          CrossAxisAlignment crossAlignment = CrossAxisAlignment::Center)
+```
+
+### Factory Function
+
+```cpp
+std::shared_ptr<RowWidget> Row(
+    const std::vector<std::shared_ptr<Widget>>& children,
+    bool addToManager = false,
+    MainAxisAlignment mainAlignment = MainAxisAlignment::Start,
+    CrossAxisAlignment crossAlignment = CrossAxisAlignment::Center
+)
+```
+
+## ColumnWidget
+
+Arranges children vertically from top to bottom.
+
+### Basic Usage
+
+```cpp
+auto column = Column({
+    Text(Point(0, 0), "Title", 3, Colors::White),
+    Text(Point(0, 0), "Subtitle", 2, Colors::Gray),
+    Button(ButtonConfig(0, 0, 100, 30, "Click Me"))
+});
+```
+
+### Constructor
+
+```cpp
+ColumnWidget(int x, int y, int width, int height,
+             MainAxisAlignment mainAlignment = MainAxisAlignment::Start,
+             CrossAxisAlignment crossAlignment = CrossAxisAlignment::Center)
+```
+
+### Factory Function
+
+```cpp
+std::shared_ptr<ColumnWidget> Column(
+    const std::vector<std::shared_ptr<Widget>>& children,
+    bool addToManager = false,
+    MainAxisAlignment mainAlignment = MainAxisAlignment::Start,
+    CrossAxisAlignment crossAlignment = CrossAxisAlignment::Center
+)
+```
+
+## Alignment Options
+
+### MainAxisAlignment
+
+Controls alignment along the primary axis (horizontal for Row, vertical for Column):
+
+- **Start** - Align children at the beginning
+- **Center** - Center children
+- **End** - Align children at the end
+- **SpaceBetween** - Distribute children evenly with no space at edges
+- **SpaceAround** - Distribute children evenly with half space at edges
+- **SpaceEvenly** - Distribute children evenly with equal space everywhere
+
+### CrossAxisAlignment
+
+Controls alignment along the secondary axis (vertical for Row, horizontal for Column):
+
+- **Start** - Align children at the start
+- **Center** - Center children
+- **End** - Align children at the end
+- **Stretch** - Stretch children to fill the cross axis
+
+## Methods
+
+### Adding Children
+
+```cpp
+void add(std::shared_ptr<Widget> child)
+void addAll(const std::vector<std::shared_ptr<Widget>>& children)
+```
+
+### Alignment
+
+```cpp
+void setMainAxisAlignment(MainAxisAlignment alignment)
+void setCrossAxisAlignment(CrossAxisAlignment alignment)
+```
+
+### Layout
+
+```cpp
+void updateLayout()  // Manually trigger layout recalculation
+```
+
+## Examples
+
+### Basic Row
+
+```cpp
+auto row = Row({
+    Button(ButtonConfig(0, 0, 80, 30, "Save")),
+    Button(ButtonConfig(0, 0, 80, 30, "Cancel"))
+});
+```
+
+### Basic Column
+
+```cpp
+auto column = Column({
+    Text(Point(0, 0), "Header", 3, Colors::White),
+    Text(Point(0, 0), "Content", 2, Colors::Gray)
+});
+```
+
+### Row with Spacing
+
+```cpp
+auto row = Row({
+    Button(ButtonConfig(0, 0, 80, 30, "First")),
+    SizedBox(10, 0),  // Horizontal spacing
+    Button(ButtonConfig(0, 0, 80, 30, "Second")),
+    SizedBox(10, 0),
+    Button(ButtonConfig(0, 0, 80, 30, "Third"))
+});
+```
+
+### Column with Spacing
+
+```cpp
+auto column = Column({
+    Text(Point(0, 0), "Line 1", 2, Colors::White),
+    SizedBox(0, 10),  // Vertical spacing
+    Text(Point(0, 0), "Line 2", 2, Colors::White),
+    SizedBox(0, 10),
+    Text(Point(0, 0), "Line 3", 2, Colors::White)
+});
+```
+
+### Centered Row
+
+```cpp
+auto row = Row({
+    Button(ButtonConfig(0, 0, 80, 30, "Button 1")),
+    Button(ButtonConfig(0, 0, 80, 30, "Button 2"))
+}, false, MainAxisAlignment::Center);
+```
+
+### Space Between
+
+```cpp
+auto row = Row({
+    Button(ButtonConfig(0, 0, 80, 30, "Left")),
+    Button(ButtonConfig(0, 0, 80, 30, "Right"))
+}, false, MainAxisAlignment::SpaceBetween);
+```
+
+### Nested Layouts
+
+```cpp
+auto innerRow = Row({
+    Button(ButtonConfig(0, 0, 60, 25, "A")),
+    Button(ButtonConfig(0, 0, 60, 25, "B"))
+});
+
+auto column = Column({
+    Text(Point(0, 0), "Title", 3, Colors::White),
+    SizedBox(0, 20),
+    innerRow,
+    SizedBox(0, 20),
+    Button(ButtonConfig(0, 0, 100, 30, "Submit"))
+});
+```
+
+### Button Group
+
+```cpp
+auto buttonGroup = Row({
+    Button(ButtonPresets::Primary(0, 0, 80, 35, "Save")),
+    SizedBox(10, 0),
+    Button(ButtonPresets::Secondary(0, 0, 80, 35, "Cancel")),
+    SizedBox(10, 0),
+    Button(ButtonPresets::Danger(0, 0, 80, 35, "Delete"))
+}, false, MainAxisAlignment::Center);
+```
+
+### Form Layout
+
+```cpp
+auto form = Column({
+    Text(Point(0, 0), "Login Form", 3, Colors::White),
+    SizedBox(0, 30),
+    TextInput(TextInputConfig(0, 0, 250, 35).placeholder("Username")),
+    SizedBox(0, 15),
+    TextInput(TextInputConfig(0, 0, 250, 35).placeholder("Password")),
+    SizedBox(0, 25),
+    Row({
+        Button(ButtonConfig(0, 0, 100, 35, "Login")),
+        SizedBox(10, 0),
+        Button(ButtonConfig(0, 0, 100, 35, "Cancel"))
+    })
+});
+```
+
+### Multi-Column Layout
+
+```cpp
+auto leftColumn = Column({
+    Text(Point(0, 0), "Left Panel", 2, Colors::Cyan),
+    SizedBox(0, 20),
+    Button(ButtonConfig(0, 0, 100, 30, "Option 1")),
+    Button(ButtonConfig(0, 0, 100, 30, "Option 2"))
+});
+
+auto rightColumn = Column({
+    Text(Point(0, 0), "Right Panel", 2, Colors::Cyan),
+    SizedBox(0, 20),
+    Text(Point(0, 0), "Content here...", 2, Colors::White)
+});
+
+auto mainLayout = Row({
+    Padding(leftColumn, 20),
+    SizedBox(40, 0),  // Space between columns
+    Padding(rightColumn, 20)
+});
+```
+
+## Complete Example
+
+From `examples/cpp/new/06_button_styles.cpp`:
+
+```cpp
+#include <fern/fern.hpp>
+
+using namespace Fern;
+
+void setupUI() {
+    auto primaryBtn = Button(ButtonPresets::Primary(0, 0, 120, 40, "Primary"));
+    auto successBtn = Button(ButtonPresets::Success(0, 0, 120, 40, "Success"));
+    auto dangerBtn = Button(ButtonPresets::Danger(0, 0, 120, 40, "Danger"));
+    auto warningBtn = Button(ButtonPresets::Warning(0, 0, 120, 40, "Warning"));
+    
+    primaryBtn->onClick.connect([]() {
+        std::cout << "Primary button clicked!" << std::endl;
+    });
+    
+    addWidget(
+        Center(
+            Column({
+                primaryBtn,
+                SizedBox(0, 10),
+                successBtn,
+                SizedBox(0, 10),
+                dangerBtn,
+                SizedBox(0, 10),
+                warningBtn
+            })
+        )
+    );
+}
+```
+
+## Best Practices
+
+### Use SizedBox for Spacing
+
+Instead of manually positioning widgets, use `SizedBox` for consistent spacing:
+
+```cpp
+// Good
+auto column = Column({
+    widget1,
+    SizedBox(0, 20),
+    widget2
+});
+
+// Avoid manual positioning
+// widget1->setPosition(0, 0);
+// widget2->setPosition(0, 50);
+```
+
+### Initialize Widgets at (0, 0)
+
+When using layout widgets, create children at position (0, 0) and let the layout position them:
+
+```cpp
+auto button = Button(ButtonConfig(0, 0, 100, 30, "Click"));
+auto text = Text(Point(0, 0), "Label", 2, Colors::White);
+
+auto column = Column({button, text});
+```
+
+### Combine with Center
+
+Use `Center` widget to center entire layouts:
+
+```cpp
+auto layout = Column({
+    Text(Point(0, 0), "Title", 3, Colors::White),
+    Button(ButtonConfig(0, 0, 100, 30, "Click"))
+});
+
+auto centered = Center(layout);
+```
+
+## See Also
+
+- [Center](/widgets/center) - Center a widget on screen
+- [Padding](/widgets/padding) - Add padding around widgets
+- [Expanded](/widgets/expanded) - Expand to fill available space
+- [SizedBox](/widgets/sized-box) - Create fixed-size spacing

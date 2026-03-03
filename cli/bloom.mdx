@@ -1,0 +1,223 @@
+---
+title: bloom
+description: Check system health and dependencies for Fern development
+---
+
+The `bloom` command performs a comprehensive health check of your development environment, verifying that all required dependencies are installed and properly configured.
+
+## Usage
+
+```bash
+fern bloom [options]
+```
+
+## Options
+
+<ParamField path="--troubleshoot" type="flag">
+  Show detailed installation instructions for missing dependencies
+</ParamField>
+
+<ParamField path="-t" type="flag">
+  Short form of `--troubleshoot`
+</ParamField>
+
+## What It Checks
+
+The bloom command verifies:
+
+### Critical Dependencies
+
+These must be installed for Fern to work:
+
+- **C++ Compiler (g++)** - Required for compiling native applications
+- **pkg-config** - Required for library configuration
+- **Fern C++ Library** - The core Fern framework
+
+### Optional Dependencies
+
+These enhance functionality but aren't required:
+
+- **Emscripten** - For web platform builds
+- **CMake** - For advanced build configurations
+- **System Libraries** - X11, Xext, fontconfig, freetype2
+
+### Fern-Specific Checks
+
+- **Fern C++ Library** - Global installation status
+- **Fern Templates** - Available project templates
+- **Fern Configuration** - Configuration file status
+
+## Examples
+
+### Basic Health Check
+
+```bash
+fern bloom
+```
+
+<CodeGroup>
+```bash Output
+🌿 Fern System Health Check
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+System Check Results:
+
+✓ C++ Compiler (g++): Found at /usr/bin/g++
+✓ pkg-config: Installed
+✓ Fern C++ Library: Installed globally
+✓ Fern Templates: Available at ~/.fern/templates
+✓ Fern Configuration: Found at ~/.fern/config.yaml
+✓ X11 Libraries: Installed
+✓ Fontconfig: Installed
+⚠ Emscripten: Not found (optional)
+
+Health Check Summary: 7 passed, 1 failed
+
+Some optional dependencies missing. Core functionality available.
+Run 'fern bloom --troubleshoot' for optimization tips.
+```
+</CodeGroup>
+
+### Show Installation Help
+
+```bash
+fern bloom --troubleshoot
+```
+
+This displays platform-specific installation instructions for missing dependencies.
+
+## System Requirements by Platform
+
+<Tabs>
+  <Tab title="Ubuntu/Debian">
+    ```bash
+    sudo apt-get update
+    sudo apt-get install build-essential pkg-config cmake make
+    sudo apt-get install libx11-dev libxext-dev libfontconfig1-dev libfreetype6-dev
+    ```
+  </Tab>
+  
+  <Tab title="CentOS/RHEL/Fedora">
+    ```bash
+    sudo dnf groupinstall 'Development Tools'
+    sudo dnf install cmake pkgconfig make libX11-devel libXext-devel fontconfig-devel freetype-devel
+    ```
+  </Tab>
+  
+  <Tab title="Arch Linux">
+    ```bash
+    sudo pacman -S base-devel cmake pkg-config make libx11 libxext fontconfig freetype2
+    ```
+  </Tab>
+</Tabs>
+
+## Installing Emscripten (Optional)
+
+For web development support:
+
+```bash
+git clone https://github.com/emscripten-core/emsdk.git
+cd emsdk
+./emsdk install latest
+./emsdk activate latest
+source ./emsdk_env.sh
+```
+
+Add to your shell profile to make it permanent:
+
+```bash
+echo 'source ~/emsdk/emsdk_env.sh' >> ~/.bashrc
+```
+
+## Exit Codes
+
+<ParamField path="0" type="code">
+  All checks passed successfully
+</ParamField>
+
+<ParamField path="1" type="code">
+  One or more checks failed (may still be functional if only optional dependencies failed)
+</ParamField>
+
+## Check Results
+
+Each check displays one of three statuses:
+
+- **✓ (Green)** - Dependency found and working
+- **✗ (Red)** - Critical dependency missing (Fern won't work)
+- **⚠ (Yellow)** - Optional dependency missing (Fern will work with reduced functionality)
+
+## Verifying Installation
+
+After installing dependencies:
+
+```bash
+fern bloom          # Check system health
+fern sprout testapp # Create test project
+cd testapp
+fern fire           # Test build and run
+```
+
+## Common Issues
+
+<AccordionGroup>
+  <Accordion title="C++ Compiler Not Found">
+    Install the build tools for your platform:
+    
+    ```bash
+    # Ubuntu/Debian
+    sudo apt-get install build-essential
+    
+    # Fedora
+    sudo dnf groupinstall 'Development Tools'
+    ```
+  </Accordion>
+  
+  <Accordion title="Fern C++ Library Not Installed">
+    Install Fern globally:
+    
+    ```bash
+    cd /path/to/fern
+    ./install.sh
+    ```
+  </Accordion>
+  
+  <Accordion title="pkg-config Not Found">
+    Install pkg-config:
+    
+    ```bash
+    # Ubuntu/Debian
+    sudo apt-get install pkg-config
+    
+    # Fedora
+    sudo dnf install pkgconfig
+    ```
+  </Accordion>
+  
+  <Accordion title="X11 Libraries Missing">
+    Install X11 development files:
+    
+    ```bash
+    # Ubuntu/Debian
+    sudo apt-get install libx11-dev libxext-dev
+    
+    # Fedora
+    sudo dnf install libX11-devel libXext-devel
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshooting Output
+
+When run with `--troubleshoot`, the command provides:
+
+1. **Platform-specific installation commands** for your operating system
+2. **Step-by-step installation guide** for Fern and dependencies
+3. **Emscripten setup instructions** for web development
+4. **Verification steps** to confirm everything works
+
+## Related Commands
+
+- [`fern sprout`](/cli/sprout) - Create a new project after verifying your environment
+- [`fern fire`](/cli/fire) - Run your project after health checks pass
+- [`fern lsp install`](/cli/lsp) - Install Language Server Protocol support

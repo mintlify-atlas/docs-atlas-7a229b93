@@ -1,0 +1,198 @@
+---
+title: Colors
+description: Predefined color constants and color manipulation utilities
+---
+
+The Colors namespace provides a comprehensive set of predefined colors in 32-bit RGBA format (0xAABBGGRR). These colors are carefully chosen to provide good contrast and usability for UI applications.
+
+## Color Format
+
+All colors use 32-bit RGBA format: `0xAABBGGRR`
+
+- AA = Alpha (transparency)
+- BB = Blue component
+- GG = Green component
+- RR = Red component
+
+## Basic Colors
+
+```cpp
+Colors::Black      // 0xFF000000 - Pure black (0, 0, 0)
+Colors::White      // 0xFFFFFFFF - Pure white (255, 255, 255)
+Colors::Red        // 0xFFFF0000 - Pure red (255, 0, 0)
+Colors::Green      // 0xFF00FF00 - Pure green (0, 255, 0)
+Colors::Blue       // 0xFF0000FF - Pure blue (0, 0, 255)
+Colors::Yellow     // 0xFFFFFF00 - Pure yellow (255, 255, 0)
+Colors::Cyan       // 0xFF00FFFF - Pure cyan (0, 255, 255)
+Colors::Magenta    // 0xFFFF00FF - Pure magenta (255, 0, 255)
+```
+
+## Grayscale Spectrum
+
+```cpp
+Colors::Gray       // 0xFF808080 - Medium gray (128, 128, 128)
+Colors::DarkGray   // 0xFF404040 - Dark gray (64, 64, 64)
+Colors::LightGray  // 0xFFC0C0C0 - Light gray (192, 192, 192)
+Colors::Charcoal   // 0xFF202020 - Very dark gray (32, 32, 32)
+```
+
+## Red Color Family
+
+```cpp
+Colors::DarkRed    // 0xFF8B0000 - Dark red (139, 0, 0)
+Colors::Crimson    // 0xFFDC143C - Crimson red (220, 20, 60)
+Colors::LightRed   // 0xFFFF6666 - Light red (255, 102, 102)
+Colors::Coral      // 0xFFFF7F50 - Coral (255, 127, 80)
+```
+
+## Green Color Family
+
+```cpp
+Colors::DarkGreen  // 0xFF006400 - Dark green (0, 100, 0)
+Colors::LightGreen // 0xFF90EE90 - Light green (144, 238, 144)
+Colors::Lime       // 0xFF32CD32 - Lime green (50, 205, 50)
+Colors::Forest     // 0xFF228B22 - Forest green (34, 139, 34)
+Colors::Olive      // 0xFF808000 - Olive (128, 128, 0)
+```
+
+## Blue Color Family
+
+```cpp
+Colors::DarkBlue   // 0xFF00008B - Dark blue (0, 0, 139)
+Colors::LightBlue  // 0xFFADD8E6 - Light blue (173, 216, 230)
+Colors::SkyBlue    // 0xFF87CEEB - Sky blue (135, 206, 235)
+Colors::Navy       // 0xFF000080 - Navy blue (0, 0, 128)
+Colors::Turquoise  // 0xFF40E0D0 - Turquoise (64, 224, 208)
+```
+
+## Cyan/Magenta/Teal
+
+```cpp
+Colors::DarkCyan    // 0xFF008B8B - Dark cyan (0, 139, 139)
+Colors::DarkMagenta // 0xFF8B008B - Dark magenta (139, 0, 139)
+Colors::Teal        // 0xFF008080 - Teal (0, 128, 128)
+```
+
+## Warm Colors
+
+```cpp
+Colors::Orange     // 0xFFFFA500 - Orange (255, 165, 0)
+Colors::Gold       // 0xFFFFD700 - Gold (255, 215, 0)
+Colors::Amber      // 0xFFFFBF00 - Amber (255, 191, 0)
+```
+
+## Cool Colors
+
+```cpp
+Colors::Purple     // 0xFF800080 - Purple (128, 0, 128)
+Colors::DarkPurple // 0xFF4B0082 - Dark purple/Indigo (75, 0, 130)
+Colors::Violet     // 0xFF8A2BE2 - Blue violet (138, 43, 226)
+Colors::Pink       // 0xFFFFC0CB - Light pink (255, 192, 203)
+Colors::HotPink    // 0xFFFF69B4 - Hot pink (255, 105, 180)
+```
+
+## Earth Tones
+
+```cpp
+Colors::Brown       // 0xFFA52A2A - Brown (165, 42, 42)
+Colors::Tan         // 0xFFD2B48C - Tan (210, 180, 140)
+Colors::SaddleBrown // 0xFF8B4513 - Saddle brown (139, 69, 19)
+```
+
+## UI Semantic Colors
+
+```cpp
+Colors::Success   // 0xFF28A745 - Success green (40, 167, 69)
+Colors::Warning   // 0xFFFFC107 - Warning yellow (255, 193, 7)
+Colors::Danger    // 0xFFDC3545 - Danger red (220, 53, 69)
+Colors::Info      // 0xFF17A2B8 - Info blue (23, 162, 184)
+Colors::Primary   // 0xFF007BFF - Primary blue (0, 123, 255)
+Colors::Secondary // 0xFF6C757D - Secondary gray (108, 117, 125)
+```
+
+## Transparency
+
+```cpp
+Colors::Transparent     // 0x00000000 - Fully transparent
+Colors::SemiTransparent // 0x80000000 - 50% transparent black
+```
+
+## Color Manipulation
+
+### blendColors()
+
+```cpp
+uint32_t Colors::blendColors(uint32_t color1, uint32_t color2, float t)
+```
+
+Performs alpha blending between two colors using linear interpolation. This is useful for creating smooth color transitions and effects.
+
+<ParamField path="color1" type="uint32_t" required>
+  First color (32-bit RGBA)
+</ParamField>
+
+<ParamField path="color2" type="uint32_t" required>
+  Second color (32-bit RGBA)
+</ParamField>
+
+<ParamField path="t" type="float" required>
+  Interpolation factor (0.0 = color1, 1.0 = color2)
+</ParamField>
+
+<ResponseField name="return" type="uint32_t">
+  Blended color result
+</ResponseField>
+
+```cpp
+uint32_t midColor = Colors::blendColors(Colors::Red, Colors::Blue, 0.5f);
+uint32_t fadeColor = Colors::blendColors(Colors::White, Colors::Black, fadeAmount);
+```
+
+## GradientStop Structure
+
+```cpp
+struct GradientStop {
+    uint32_t color;     // Color at this stop (32-bit RGBA)
+    float position;     // Position in gradient (0.0 to 1.0)
+};
+```
+
+A gradient stop defines a color and its position within a gradient. Multiple stops can be combined to create complex color transitions.
+
+## Example Usage
+
+### Using Predefined Colors
+
+```cpp
+Draw::fill(Colors::Black);
+button.setBackgroundColor(Colors::Primary);
+text.setColor(Colors::White);
+```
+
+### Color Blending
+
+```cpp
+// Create a fade effect
+float fadeAmount = 0.0f;
+while (fadeAmount <= 1.0f) {
+    uint32_t color = Colors::blendColors(Colors::White, Colors::Black, fadeAmount);
+    Draw::fill(color);
+    fadeAmount += 0.01f;
+}
+```
+
+### Semantic UI Colors
+
+```cpp
+// Success button
+auto successButton = Button(ButtonConfig(10, 10, 100, 40, "Save"));
+successButton.setBackgroundColor(Colors::Success);
+
+// Warning message
+auto warningText = Text("Warning: Changes not saved", 10, 60);
+warningText.setColor(Colors::Warning);
+
+// Danger button
+auto deleteButton = Button(ButtonConfig(10, 110, 100, 40, "Delete"));
+deleteButton.setBackgroundColor(Colors::Danger);
+```

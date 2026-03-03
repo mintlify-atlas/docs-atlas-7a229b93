@@ -1,0 +1,544 @@
+---
+title: Signals and Slots
+description: Handle events with Fern's type-safe signal and slot system for callbacks and event handling
+---
+
+## Overview
+
+Fern uses a **signals and slots** pattern for event handling. Signals are emitted when events occur, and slots (callback functions) connected to those signals are called automatically.
+
+This provides a type-safe, decoupled way to handle user interactions and widget events.
+
+## Signal Basics
+
+The `Signal` class is a template that accepts argument types:
+
+```cpp
+template <typename... Args>
+class Signal {
+public:
+    using ConnectionID = size_t;
+    using SlotFunction = std::function<void(Args...)>;
+    
+    ConnectionID connect(SlotFunction slot);
+    void emit(Args... args) const;
+    void disconnect(ConnectionID id);
+};
+```
+
+## Connecting to Signals
+
+<Steps>
+
+### Step 1: Create a Widget with Signals
+
+Most Fern widgets have built-in signals:
+
+```cpp
+using namespace Fern;
+
+auto button = Button(ButtonConfig(100, 50, 120, 40, "Click Me"));
+
+// ButtonWidget has these signals:
+// - Signal<> onClick
+// - Signal<bool> onHover
+// - Signal<bool> onPress
+```
+
+### Step 2: Connect a Slot (Callback)
+
+Connect a lambda or function to the signal:
+
+```cpp
+// Connect with lambda
+button->onClick.connect([]() {
+    std::cout << "Button clicked!" << std::endl;
+});
+
+// Connect with function pointer
+void handleClick() {
+    std::cout << "Clicked!" << std::endl;
+}
+button->onClick.connect(handleClick);
+
+// Connect with member function
+class MyApp {
+    void onButtonClick() {
+        std::cout << "Member function called!" << std::endl;
+    }
+    
+    void setupUI() {
+        auto btn = Button(ButtonConfig(0, 0, 100, 40, "Click"));
+        btn->onClick.connect([this]() {
+            onButtonClick();
+        });
+    }
+};
+```
+
+### Step 3: Signals Emit Automatically
+
+The widget emits the signal when the event occurs:
+
+```cpp
+// Internal to ButtonWidget::handleInput()
+if (clicked) {
+    onClick.emit();  // All connected slots are called
+}
+```
+
+</Steps>
+
+## Signal Types
+
+### No arguments
+
+Simple event notification without parameters:
+
+```cpp
+Fern::Signal<> onClick;
+
+// Connect
+onClick.connect([]() {
+    std::cout << "Event triggered!" << std::endl;
+});
+
+// Emit
+onClick.emit();
+```
+
+### Single Argument - Signal\<T>
+
+Pass data with the event:
+
+```cpp
+Fern::Signal<bool> onToggle;
+
+// Connect
+onToggle.connect([](bool isOn) {
+    std::cout << "Toggle: " << (isOn ? "ON" : "OFF") << std::endl;
+});
+
+// Emit
+onToggle.emit(true);
+```
+
+### Multiple arguments
+
+Signals can pass multiple values using template parameters:
+
+Pass multiple values:
+
+```cpp
+Fern::Signal<int, std::string> onValueChange;
+
+// Connect
+onValueChange.connect([](int value, const std::string& label) {
+    std::cout << label << ": " << value << std::endl;
+});
+
+// Emit
+onValueChange.emit(42, "Score");
+```
+
+## Managing Connections
+
+### Save Connection ID
+
+Store the connection ID to disconnect later:
+
+```cpp
+auto button = Fern::Button(ButtonConfig(0, 0, 100, 40, "Click"));
+
+// Save connection ID
+auto connectionID = button->onClick.connect([]() {
+    std::cout << "First handler" << std::endl;
+});
+
+// Later: disconnect
+button->onClick.disconnect(connectionID);
+```
+
+### Multiple Connections
+
+Connect multiple slots to the same signal:
+
+```cpp
+auto button = Fern::Button(ButtonConfig(0, 0, 100, 40, "Click"));
+
+// All of these will be called when button is clicked
+button->onClick.connect([]() {
+    std::cout << "Handler 1" << std::endl;
+});
+
+button->onClick.connect([]() {
+    std::cout << "Handler 2" << std::endl;
+});
+
+button->onClick.connect([]() {
+    std::cout << "Handler 3" << std::endl;
+});
+
+// Output when clicked:
+// Handler 1
+// Handler 2  
+// Handler 3
+```
+
+### Conditional Disconnection
+
+```cpp
+class ClickCounter {
+    int count = 0;
+    Fern::Signal<>::ConnectionID connID;
+    
+    void setup() {
+        auto btn = Fern::Button(ButtonConfig(0, 0, 100, 40, "Click"));
+        
+        connID = btn->onClick.connect([this, btn]() {
+            count++;
+            std::cout << "Clicks: " << count << std::endl;
+            
+            if (count >= 10) {
+                btn->onClick.disconnect(connID);
+                std::cout << "Max clicks reached!" << std::endl;
+            }
+        });
+    }
+};
+```
+
+## Widget Signals
+
+### Button Signals
+
+<Tabs>
+  <Tab title="onClick">
+    ```cpp
+    Signal<> onClick;
+    
+    // Emitted when button is clicked
+    button->onClick.connect([]() {
+        std::cout << "Clicked!" << std::endl;
+    });
+    ```
+  </Tab>
+  
+  <Tab title="onHover">
+    ```cpp
+    Signal<bool> onHover;
+    
+    // Emitted when hover state changes
+    button->onHover.connect([](bool isHovered) {
+        if (isHovered) {
+            std::cout << "Mouse entered" << std::endl;
+        } else {
+            std::cout << "Mouse left" << std::endl;
+        }
+    });
+    ```
+  </Tab>
+  
+  <Tab title="onPress">
+    ```cpp
+    Signal<bool> onPress;
+    
+    // Emitted when press state changes
+    button->onPress.connect([](bool isPressed) {
+        if (isPressed) {
+            std::cout << "Mouse down" << std::endl;
+        } else {
+            std::cout << "Mouse up" << std::endl;
+        }
+    });
+    ```
+  </Tab>
+</Tabs>
+
+### Custom Widget Signals
+
+Add signals to your custom widgets:
+
+```cpp
+class SliderWidget : public Fern::Widget {
+public:
+    // Define signals
+    Fern::Signal<float> onValueChange;
+    Fern::Signal<> onDragStart;
+    Fern::Signal<> onDragEnd;
+    
+    bool handleInput(const Fern::InputState& input) override {
+        // Emit signals when appropriate
+        if (dragging && valueChanged) {
+            onValueChange.emit(currentValue);
+        }
+        
+        if (startedDragging) {
+            onDragStart.emit();
+        }
+        
+        if (stoppedDragging) {
+            onDragEnd.emit();
+        }
+        
+        return handled;
+    }
+    
+private:
+    float currentValue = 0.5f;
+    bool dragging = false;
+};
+```
+
+## Practical Examples
+
+### Counter with Multiple Buttons
+
+```cpp
+using namespace Fern;
+
+static int counter = 0;
+static std::shared_ptr<TextWidget> display;
+
+void setupUI() {
+    display = Text(Point(0, 0), "Count: 0", 3, Colors::White);
+    
+    auto incrementBtn = Button(ButtonConfig(0, 0, 100, 40, "+"));
+    auto decrementBtn = Button(ButtonConfig(0, 0, 100, 40, "-"));
+    auto resetBtn = Button(ButtonConfig(0, 0, 100, 40, "Reset"));
+    
+    // Connect increment
+    incrementBtn->onClick.connect([]() {
+        counter++;
+        display->setText("Count: " + std::to_string(counter));
+    });
+    
+    // Connect decrement
+    decrementBtn->onClick.connect([]() {
+        counter--;
+        display->setText("Count: " + std::to_string(counter));
+    });
+    
+    // Connect reset
+    resetBtn->onClick.connect([]() {
+        counter = 0;
+        display->setText("Count: 0");
+    });
+    
+    auto layout = Column({
+        display,
+        SizedBox(0, 20),
+        Row({decrementBtn, SizedBox(10, 0), incrementBtn}, false),
+        SizedBox(0, 10),
+        resetBtn
+    });
+    
+    addWidget(Center(layout));
+}
+```
+
+### Button State Tracking
+
+```cpp
+void setupUI() {
+    auto button = Fern::Button(ButtonConfig(100, 50, 120, 40, "Hover Me"));
+    
+    button->onHover.connect([](bool hovered) {
+        if (hovered) {
+            std::cout << "Mouse entered button" << std::endl;
+        } else {
+            std::cout << "Mouse left button" << std::endl;
+        }
+    });
+    
+    button->onPress.connect([](bool pressed) {
+        if (pressed) {
+            std::cout << "Button pressed down" << std::endl;
+        } else {
+            std::cout << "Button released" << std::endl;
+        }
+    });
+    
+    button->onClick.connect([]() {
+        std::cout << "Button clicked (full press+release)" << std::endl;
+    });
+}
+```
+
+### Widget Communication
+
+```cpp
+class App {
+    std::shared_ptr<TextWidget> statusText;
+    std::shared_ptr<ButtonWidget> saveBtn;
+    std::shared_ptr<ButtonWidget> loadBtn;
+    
+    void setupUI() {
+        statusText = Text(Point(0, 0), "Ready", 2, Colors::White);
+        
+        saveBtn = Button(ButtonPresets::Success(0, 0, 100, 40, "Save"));
+        loadBtn = Button(ButtonPresets::Primary(0, 0, 100, 40, "Load"));
+        
+        saveBtn->onClick.connect([this]() {
+            statusText->setText("Saving...");
+            statusText->setColor(Colors::Warning);
+            performSave();
+            statusText->setText("Saved!");
+            statusText->setColor(Colors::Success);
+        });
+        
+        loadBtn->onClick.connect([this]() {
+            statusText->setText("Loading...");
+            statusText->setColor(Colors::Info);
+            performLoad();
+            statusText->setText("Loaded!");
+            statusText->setColor(Colors::Success);
+        });
+    }
+    
+    void performSave() { /* ... */ }
+    void performLoad() { /* ... */ }
+};
+```
+
+### Custom Signal Example
+
+```cpp
+class ColorPicker : public Fern::Widget {
+public:
+    Fern::Signal<uint32_t> onColorSelect;  // Emits selected color
+    
+    void render() override {
+        // Draw color swatches
+        for (size_t i = 0; i < colors.size(); i++) {
+            int swatchX = x_ + (i % 4) * 40;
+            int swatchY = y_ + (i / 4) * 40;
+            Fern::Draw::fillRect(swatchX, swatchY, 35, 35, colors[i]);
+        }
+    }
+    
+    bool handleInput(const Fern::InputState& input) override {
+        if (input.mousePressed) {
+            int localX = input.mouseX - x_;
+            int localY = input.mouseY - y_;
+            int index = (localY / 40) * 4 + (localX / 40);
+            
+            if (index >= 0 && index < colors.size()) {
+                onColorSelect.emit(colors[index]);  // Emit selected color
+                return true;
+            }
+        }
+        return false;
+    }
+    
+private:
+    std::vector<uint32_t> colors = {
+        Colors::Red, Colors::Green, Colors::Blue, Colors::Yellow,
+        Colors::Cyan, Colors::Magenta, Colors::Orange, Colors::Purple
+    };
+};
+
+// Usage
+auto picker = std::make_shared<ColorPicker>();
+picker->onColorSelect.connect([](uint32_t color) {
+    std::cout << "Selected color: 0x" << std::hex << color << std::endl;
+});
+```
+
+## Best Practices
+
+<Steps>
+
+### Use Lambda Captures Carefully
+
+```cpp
+// Good: Capture by value for simple types
+int value = 42;
+button->onClick.connect([value]() {
+    std::cout << value << std::endl;
+});
+
+// Good: Capture shared_ptr to keep widget alive
+auto text = Text(Point(0, 0), "Hello", 2, Colors::White);
+button->onClick.connect([text]() {
+    text->setColor(Colors::Red);
+});
+
+// Caution: Capturing 'this' - ensure object lifetime
+class MyApp {
+    void setup() {
+        button->onClick.connect([this]() {
+            handleClick();  // 'this' must be valid
+        });
+    }
+};
+```
+
+### Disconnect When Done
+
+Avoid memory leaks by disconnecting unused signals:
+
+```cpp
+class TemporaryButton {
+    Fern::Signal<>::ConnectionID connID;
+    
+    void enable() {
+        connID = button->onClick.connect([]() { /* ... */ });
+    }
+    
+    void disable() {
+        button->onClick.disconnect(connID);
+    }
+};
+```
+
+### Avoid Circular References
+
+```cpp
+// Bad: circular reference
+auto widget1 = std::make_shared<MyWidget>();
+auto widget2 = std::make_shared<MyWidget>();
+
+widget1->signal.connect([widget2]() { /* uses widget2 */ });
+widget2->signal.connect([widget1]() { /* uses widget1 */ });
+// Both keep each other alive!
+
+// Good: use weak_ptr for back-references
+std::weak_ptr<MyWidget> weakWidget1 = widget1;
+widget2->signal.connect([weakWidget1]() {
+    if (auto w = weakWidget1.lock()) {
+        // Use widget safely
+    }
+});
+```
+
+### Keep Slot Functions Fast
+
+Signal callbacks run on the main thread:
+
+```cpp
+// Good: quick operations
+button->onClick.connect([]() {
+    counter++;
+    updateDisplay();
+});
+
+// Avoid: long-running operations
+button->onClick.connect([]() {
+    // Don't do this in a signal handler:
+    loadHugeFile();  // Blocks UI
+    complexCalculation();  // Freezes rendering
+});
+```
+
+</Steps>
+
+<Tip>
+Signals are called in the order they were connected. If order matters, connect signals in the desired sequence.
+</Tip>
+
+## Next Steps
+
+- Learn about [Creating Widgets](/guides/creating-widgets) with custom signals
+- Explore [Layouts](/guides/layouts) for UI structure
+- See [Styling](/guides/styling) for visual feedback on events

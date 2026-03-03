@@ -1,0 +1,459 @@
+---
+title: Layout System
+description: Arrange widgets with Row, Column, Padding, Center, and Expanded layouts
+---
+
+## Overview
+
+Fern's layout system provides declarative widgets for arranging UI components. Layouts automatically position children based on alignment, spacing, and flex rules.
+
+## Layout Widgets
+
+### Row - Horizontal Layout
+
+Arrange widgets horizontally from left to right:
+
+```cpp
+auto row = Fern::Row({
+    button1,
+    button2,
+    button3
+}, false, MainAxisAlignment::Center);
+```
+
+<Tabs>
+  <Tab title="Basic Usage">
+    ```cpp
+    auto button1 = Fern::Button(ButtonConfig(0, 0, 80, 40, "OK"));
+    auto button2 = Fern::Button(ButtonConfig(0, 0, 80, 40, "Cancel"));
+    
+    auto row = Fern::Row({
+        button1,
+        button2
+    });
+    
+    Fern::addWidget(row);
+    ```
+  </Tab>
+  
+  <Tab title="With Alignment">
+    ```cpp
+    using namespace Fern;
+    
+    auto row = Row({
+        button1,
+        button2,
+        button3
+    }, false, MainAxisAlignment::SpaceBetween, CrossAxisAlignment::Center);
+    ```
+  </Tab>
+  
+  <Tab title="With Spacing">
+    ```cpp
+    auto row = Fern::Row({
+        button1,
+        SizedBox(20, 0),  // 20px horizontal spacing
+        button2,
+        SizedBox(20, 0),
+        button3
+    });
+    ```
+  </Tab>
+</Tabs>
+
+### Column - Vertical Layout
+
+Stack widgets vertically from top to bottom:
+
+```cpp
+auto column = Fern::Column({
+    title,
+    subtitle,
+    content
+}, false, MainAxisAlignment::Start);
+```
+
+**Example: Form Layout**
+
+```cpp
+using namespace Fern;
+
+auto titleText = Text(TextConfig(0, 0, "Login Form")
+    .style(TextStyle().fontSize(4).color(Colors::White)));
+
+auto usernameInput = TextInput(/* ... */);
+auto passwordInput = TextInput(/* ... */);
+auto submitButton = Button(ButtonConfig(0, 0, 200, 40, "Submit"));
+
+auto form = Column({
+    titleText,
+    SizedBox(0, 20),      // Vertical spacing
+    usernameInput,
+    SizedBox(0, 10),
+    passwordInput,
+    SizedBox(0, 20),
+    submitButton
+}, false, MainAxisAlignment::Start, CrossAxisAlignment::Center);
+
+addWidget(Center(form));
+```
+
+### Center - Centering Layout
+
+Center a single widget within available space:
+
+```cpp
+auto centered = Fern::Center(myWidget);
+```
+
+```cpp
+// Center a button on screen
+int width = Fern::getWidth();
+int height = Fern::getHeight();
+
+auto button = Button(ButtonConfig(0, 0, 120, 40, "Click Me"));
+auto centerWidget = std::make_shared<CenterWidget>(0, 0, width, height);
+centerWidget->add(button);
+
+addWidget(centerWidget);
+```
+
+<Note>
+`Center` automatically handles window resizing when implementing `ResponsiveWidget`.
+</Note>
+
+### Padding - Spacing Around Widgets
+
+Add space around widgets:
+
+```cpp
+// Uniform padding (all sides)
+auto padded = Fern::Padding(widget, 10);
+
+// Custom padding (left, top, right, bottom)
+auto padded = Fern::Padding(widget, 10, 20, 10, 20);
+```
+
+**Example: Card Layout**
+
+```cpp
+auto content = Column({
+    Text(TextConfig(0, 0, "Card Title").style(TextStyle().fontSize(3))),
+    SizedBox(0, 10),
+    Text(TextConfig(0, 0, "Card content goes here"))
+});
+
+auto card = Container(
+    Colors::DarkGray,
+    100, 100, 300, 200,
+    Padding(content, 20)  // 20px padding on all sides
+);
+```
+
+### Expanded - Flex Spacing
+
+Make widgets expand to fill available space with flex factors:
+
+```cpp
+auto row = Row({
+    button1,                    // Fixed size
+    Expanded(flexContent, 2),   // Takes 2x space
+    Expanded(sidebar, 1)        // Takes 1x space
+});
+```
+
+**Example: App Layout**
+
+```cpp
+using namespace Fern;
+
+int width = getWidth();
+int height = getHeight();
+
+// Header (fixed 80px)
+auto header = Container(
+    Colors::DarkBlue, 0, 0, width, 80,
+    Center(Text(Point(0, 0), "HEADER", 2, Colors::White))
+);
+
+// Main content (expands to fill)
+auto mainContent = Container(
+    Colors::Blue, 0, 0, 0, 0,
+    Center(Text(Point(0, 0), "Content", 3, Colors::White))
+);
+
+// Footer (fixed 60px)
+auto footer = Container(
+    Colors::DarkGray, 0, 0, 0, 60,
+    Center(Text(Point(0, 0), "FOOTER", 2, Colors::White))
+);
+
+auto layout = Column({
+    header,
+    Expanded(mainContent, 1),  // Takes all remaining space
+    footer
+});
+
+addWidget(layout);
+```
+
+## Alignment Options
+
+### MainAxisAlignment
+
+Controls alignment along the primary direction (horizontal for Row, vertical for Column):
+
+```cpp
+enum class MainAxisAlignment {
+    Start,         // Align to start (left/top)
+    Center,        // Center items
+    End,           // Align to end (right/bottom)
+    SpaceBetween,  // Space evenly, no edge spacing
+    SpaceAround,   // Space evenly, half edge spacing
+    SpaceEvenly    // Space evenly, equal everywhere
+};
+```
+
+**Visual Example:**
+
+<CodeGroup>
+```cpp Start
+auto row = Row(children, false, MainAxisAlignment::Start);
+// [btn1][btn2][btn3]                    |
+```
+
+```cpp Center
+auto row = Row(children, false, MainAxisAlignment::Center);
+//           [btn1][btn2][btn3]          |
+```
+
+```cpp SpaceBetween
+auto row = Row(children, false, MainAxisAlignment::SpaceBetween);
+// [btn1]      [btn2]      [btn3]        |
+```
+
+```cpp SpaceEvenly
+auto row = Row(children, false, MainAxisAlignment::SpaceEvenly);
+//   [btn1]    [btn2]    [btn3]         |
+```
+</CodeGroup>
+
+### CrossAxisAlignment
+
+Controls alignment perpendicular to the main axis:
+
+```cpp
+enum class CrossAxisAlignment {
+    Start,    // Align to start
+    Center,   // Center items
+    End,      // Align to end
+    Stretch   // Stretch to fill
+};
+```
+
+```cpp
+// Vertically center items in a horizontal row
+auto row = Row(
+    children,
+    false,
+    MainAxisAlignment::Start,
+    CrossAxisAlignment::Center  // Vertical centering
+);
+```
+
+## SizedBox - Empty Space
+
+Create empty space of specific dimensions:
+
+```cpp
+// Vertical spacing in a column
+SizedBox(0, 20)   // 20px height
+
+// Horizontal spacing in a row  
+SizedBox(30, 0)   // 30px width
+
+// Fixed size placeholder
+SizedBox(100, 100)  // 100x100 square
+```
+
+```cpp
+auto column = Column({
+    Text(Point(0, 0), "First", 2, Colors::White),
+    SizedBox(0, 15),  // 15px gap
+    Text(Point(0, 0), "Second", 2, Colors::White),
+    SizedBox(0, 15),
+    Text(Point(0, 0), "Third", 2, Colors::White)
+});
+```
+
+## Complex Layouts
+
+### Grid-like Layout with Rows and Columns
+
+```cpp
+using namespace Fern;
+
+// Top row with 3 equal-width boxes
+auto topRow = Row({
+    Expanded(Container(Colors::Red, 0, 0, 0, 0, 
+        Center(Text(Point(0, 0), "1", 3, Colors::White))), 1),
+    Expanded(Container(Colors::Green, 0, 0, 0, 0,
+        Center(Text(Point(0, 0), "2", 3, Colors::White))), 1),
+    Expanded(Container(Colors::Blue, 0, 0, 0, 0,
+        Center(Text(Point(0, 0), "3", 3, Colors::White))), 1)
+}, false);
+
+// Bottom row with padding
+auto bottomRow = Row({
+    Expanded(Padding(
+        Container(Colors::Yellow, 0, 0, 0, 0,
+            Center(Text(Point(0, 0), "4", 3, Colors::Black))
+        ), 10), 1)
+}, false);
+
+// Main layout
+auto layout = Column({
+    Expanded(topRow, 1),
+    SizedBox(0, 10),
+    Expanded(bottomRow, 1)
+}, false);
+```
+
+### Dashboard Layout
+
+```cpp
+int width = Fern::getWidth();
+int height = Fern::getHeight();
+
+// Sidebar (fixed 200px)
+auto sidebar = Container(
+    Colors::DarkGray, 0, 0, 200, height,
+    Padding(
+        Column({
+            Text(Point(0, 0), "Menu", 3, Colors::White),
+            SizedBox(0, 20),
+            Button(ButtonConfig(0, 0, 160, 35, "Home")),
+            SizedBox(0, 10),
+            Button(ButtonConfig(0, 0, 160, 35, "Settings"))
+        }),
+        20
+    )
+);
+
+// Main content area (expands)
+auto content = Container(
+    Colors::LightGray, 0, 0, 0, 0,
+    Center(Text(Point(0, 0), "Dashboard", 4, Colors::Black))
+);
+
+auto dashboard = Row({
+    sidebar,
+    Expanded(content, 1)
+}, false);
+```
+
+## Nested Layouts
+
+Layouts can be nested for complex arrangements:
+
+```cpp
+auto header = Container(
+    Colors::DarkBlue, 0, 0, width, 80,
+    Row({
+        Padding(Text(Point(0, 0), "Logo", 3, Colors::White), 20),
+        Expanded(SizedBox(0, 0), 1),  // Spacer
+        Button(ButtonConfig(0, 0, 80, 35, "Login")),
+        SizedBox(20, 0)
+    }, false, MainAxisAlignment::Start, CrossAxisAlignment::Center)
+);
+
+auto mainLayout = Column({
+    header,
+    Expanded(
+        Row({
+            sidebar,
+            Expanded(content, 1)
+        }, false),
+        1
+    ),
+    footer
+}, false);
+```
+
+<Tip>
+Use `false` as the second parameter to layout factory functions to prevent automatic addition to the widget manager when nesting layouts.
+</Tip>
+
+## Responsive Layouts
+
+Layouts automatically adjust to window size:
+
+```cpp
+Fern::setWindowResizeCallback([](int newWidth, int newHeight) {
+    Fern::WidgetManager::getInstance().handleWindowResize(newWidth, newHeight);
+});
+```
+
+Center widgets automatically reposition on resize:
+
+```cpp
+class MyApp {
+    std::shared_ptr<CenterWidget> centerWidget;
+    
+    void setupUI() {
+        auto content = Column({/* ... */});
+        centerWidget = std::make_shared<CenterWidget>(
+            0, 0, getWidth(), getHeight()
+        );
+        centerWidget->add(content);
+        addWidget(centerWidget);
+    }
+};
+```
+
+## Best Practices
+
+<Steps>
+
+### Use Semantic Layouts
+
+Choose layouts that match your intent:
+- `Row` for horizontal toolbars, button groups
+- `Column` for forms, vertical lists
+- `Center` for modals, splash screens
+- `Expanded` for responsive sections
+
+### Control Spacing
+
+Use `SizedBox` for explicit spacing instead of hardcoded positions:
+
+```cpp
+// Good
+Column({ widget1, SizedBox(0, 20), widget2 })
+
+// Avoid
+widget2->setPosition(x, y + 20);
+```
+
+### Leverage Alignment
+
+Use alignment enums instead of manual positioning:
+
+```cpp
+// Good
+Row(children, false, MainAxisAlignment::SpaceBetween)
+
+// Avoid calculating positions manually
+```
+
+### Nest Thoughtfully
+
+Limit nesting depth for better performance and maintainability.
+
+</Steps>
+
+## Next Steps
+
+- Learn about [Styling](/guides/styling) to customize appearance
+- Explore [Responsive Design](/guides/responsive-design) patterns
+- See [Creating Widgets](/guides/creating-widgets) for custom components
